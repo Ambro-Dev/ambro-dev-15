@@ -1,34 +1,17 @@
 // src/app/uslugi/page.tsx
-import type { Metadata } from "next";
 import { serviceCategories } from "@/lib/services";
 import ServicesPageClient from "@/components/services/services-page-client";
 import { Suspense } from "react";
+import { constructMetadata } from "@/lib/metadata";
 import {
   prepareSerializableService,
   type SerializableService,
 } from "@/lib/service-utils";
 
-export const metadata: Metadata = {
+export const metadata = constructMetadata({
   title: "Usługi IT i DevOps | Nowoczesne rozwiązania technologiczne",
   description:
     "Kompleksowe usługi technologiczne - od konfiguracji i zarządzania infrastrukturą chmurową, automatyzację procesów IT, po tworzenie aplikacji webowych.",
-  openGraph: {
-    title: "Usługi IT i DevOps | Ambro",
-    description:
-      "Kompleksowe usługi technologiczne dopasowane do potrzeb Twojego biznesu - DevOps, infrastruktura, automatyzacja, aplikacje webowe.",
-    images: [
-      {
-        url: "/images/services/og-services.jpg",
-        width: 1200,
-        height: 630,
-        alt: "Usługi IT i DevOps",
-      },
-    ],
-    type: "website",
-  },
-  alternates: {
-    canonical: "https://ambro.dev/uslugi",
-  },
   keywords: [
     "DevOps",
     "usługi IT",
@@ -41,7 +24,9 @@ export const metadata: Metadata = {
     "Kubernetes",
     "Next.js",
   ],
-};
+  canonical: "https://ambro.dev/uslugi",
+  image: "/images/services/og-services.jpg",
+});
 
 export default function ServicesPage() {
   // Kategoryzuj usługi (przygotowanie danych na serwerze)

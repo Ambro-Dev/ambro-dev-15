@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@heroui/react": "^2.7.5",
     "@next/mdx": "^15.2.3",
     "@react-three/drei": "^10.0.4",
     "@types/lodash": "^4.17.16",
@@ -16,6 +17,7 @@
     "@types/three": "^0.174.0",
     "@vercel/analytics": "^1.5.0",
     "@vercel/speed-insights": "^1.2.0",
+    "ambro-dev-15": "file:",
     "critters": "^0.0.23",
     "framer-motion": "^12.5.0",
     "lodash": "^4.17.21",
@@ -36,9 +38,12 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "autoprefixer": "^10.4.21",
+    "canvas": "^3.1.0",
     "eslint": "^9",
     "eslint-config-next": "15.2.3",
-    "tailwindcss": "^4",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^3.4.17",
     "typescript": "^5"
   }
 }

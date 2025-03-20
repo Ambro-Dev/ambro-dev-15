@@ -1,26 +1,16 @@
 // src/app/kontakt/page.tsx
 import ContactPageContent from "@/components/contact/contact-page-content";
 import ContactSchemaJsonLd from "@/lib/contact";
-import type { Metadata } from "next";
 import { Suspense } from "react";
+import { constructMetadata } from "@/lib/metadata";
 
 // Metadane dla strony (SEO)
-export const metadata: Metadata = {
+export const metadata = constructMetadata({
   title: "Kontakt | DevOS - Profesjonalne rozwiązania webowe",
   description:
     "Skontaktuj się z DevOS, aby omówić Twój projekt. Oferujemy profesjonalne usługi webowe, aplikacje i rozwiązania dla biznesu.",
-  alternates: {
-    canonical: "https://devos.pl/kontakt",
-  },
-  openGraph: {
-    title: "Kontakt | DevOS - Profesjonalne rozwiązania webowe",
-    description: "Skontaktuj się z nami, aby omówić Twój projekt webowy",
-    url: "https://devos.pl/kontakt",
-    siteName: "DevOS",
-    locale: "pl_PL",
-    type: "website",
-  },
-};
+  canonical: "https://devos.pl/kontakt",
+});
 
 export default function ContactPage() {
   return (

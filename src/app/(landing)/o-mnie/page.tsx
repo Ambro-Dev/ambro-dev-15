@@ -19,6 +19,9 @@ import { AnimatedGradientBorder } from "@/components/ambro-ui/animated-gradient-
 import Image from "next/image";
 import { TypeAnimation } from "react-type-animation";
 
+// Since this is a client component, we need a separate file for metadata
+// This will be handled in a metadata.ts file in the same directory
+
 // Dane doświadczenia zawodowego
 const doswiadczenie = [
   {

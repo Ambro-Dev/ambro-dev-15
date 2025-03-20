@@ -9,6 +9,7 @@ import {
   prepareSerializableService,
   type SerializableService,
 } from "@/lib/service-utils";
+import { siteConfig } from "@/lib/metadata";
 
 // Typ props dla Next.js 15
 type ServiceDetailPageProps = {
@@ -27,14 +28,24 @@ export async function generateMetadata({
 
   if (!service) {
     return {
-      title: "Usługa nie znaleziona | Ambro",
+      title: `Usługa nie znaleziona | ${siteConfig.name}`,
       description: "Nie mogliśmy znaleźć szukanej usługi.",
     };
   }
 
+  // Using patterns from constructMetadata while maintaining dynamic generation
   return {
-    title: `${service.title} | Usługi IT | Ambro`,
+    title: `${service.title} | Usługi IT | ${siteConfig.name}`,
     description: service.description,
+    metadataBase: new URL(siteConfig.url),
+    keywords: [
+      service.title,
+      ...service.tags,
+      "usługi IT",
+      "DevOps",
+      "development",
+      "Polska",
+    ],
     openGraph: {
       title: `${service.title} | Profesjonalne usługi IT`,
       description: service.description,
@@ -46,30 +57,30 @@ export async function generateMetadata({
           alt: service.title,
         },
       ],
-      locale: "pl_PL",
+      locale: siteConfig.locale,
       type: "website",
     },
     alternates: {
-      canonical: `https://ambro.dev/uslugi/${serviceId}`,
+      canonical: `${siteConfig.url}/uslugi/${serviceId}`,
     },
     robots: {
       index: true,
       follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-video-preview": -1,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+      },
     },
     twitter: {
       card: "summary_large_image",
       title: service.title,
       description: service.description,
       images: [`/images/services/${serviceId}.jpg`],
+      creator: siteConfig.twitter,
     },
-    keywords: [
-      service.title,
-      ...service.tags,
-      "usługi IT",
-      "DevOps",
-      "development",
-      "Polska",
-    ],
   };
 }
 

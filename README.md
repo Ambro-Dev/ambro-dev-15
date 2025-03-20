@@ -215,3 +215,66 @@ If you have any questions or feedback, please reach out at [your.email@example.c
 ---
 
 Thank you for checking out my DevOps & IT Architecture Portfolio! I hope you find it useful and inspiring for your own projects.
+
+# Landing Page Skeleton Structure
+
+This document describes the structure and components of the landing page implementation with focus on Next.js 15 features like Partial Prerendering.
+
+## Overview
+
+The landing page is structured with the following key components:
+
+1. **Static Sections** (Prerendered):
+   - Hero Section
+   - About Me Section
+   - Services Section
+
+2. **Dynamic Sections** (Loaded with Suspense and PPR):
+   - Infrastructure Concept
+   - Projects Section (with async data fetching)
+   - Tech Stack Section
+   - Testimonials Section (with async data fetching)
+   - CTA (Call to Action) Section
+
+## Files and Their Purpose
+
+### 1. `page-skeleton.tsx`
+A visual skeleton representation of the landing page with placeholder components showing the overall structure and layout. This is useful for visualizing the page structure before implementation.
+
+### 2. `loading-states.tsx`
+Contains loading state components for each section that are displayed while the actual content is loading. These components are used as fallbacks in Suspense boundaries.
+
+### 3. `example-page-structure.tsx`
+A practical example showing how to implement the landing page with proper Suspense boundaries and server components. Shows the structure with both static and dynamic sections.
+
+## Implementation Details
+
+### Smooth Scrolling
+The page uses a `SmoothScroll` component to provide a smooth scrolling experience through the different sections.
+
+### Partial Prerendering (PPR)
+Next.js 15's PPR feature is used to:
+- Statically render critical sections (Hero, About, Services)
+- Dynamically load other sections on demand with Suspense
+- Enable server components to fetch data asynchronously
+
+### Data Fetching
+The page demonstrates two approaches for data fetching:
+- Server Components with async data fetching (Projects, Testimonials)
+- Static content rendering
+
+### SEO Optimization
+The page includes:
+- Proper metadata using `constructMetadata`
+- Schema.org structured data using `generateHomeSchema`
+
+## Usage
+
+To implement the actual landing page:
+
+1. Use the provided skeleton as a reference for the overall structure
+2. Replace loading states with actual content components
+3. Implement data fetching logic for dynamic sections
+4. Customize styling and content according to design requirements
+
+The structure can be extended with additional sections as needed while maintaining the performance benefits of Partial Prerendering.

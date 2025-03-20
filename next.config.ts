@@ -10,7 +10,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "ambro-dev.pl",
+        hostname: "ambro.dev",
       },
     ],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],
@@ -24,9 +24,30 @@ const nextConfig: NextConfig = {
   experimental: {
     mdxRs: true,
     optimizeCss: true,
-    optimizePackageImports: ["framer-motion", "lodash", "lucide-react"],
+    optimizePackageImports: [
+      "framer-motion",
+      "lodash",
+      "lucide-react",
+      "react-intersection-observer",
+      "three",
+      "@react-three/drei",
+      "recharts",
+    ],
+    serverActions: {
+      bodySizeLimit: "2mb",
+    },
   },
   poweredByHeader: false,
+  compress: true,
+  reactStrictMode: true,
+  compiler: {
+    removeConsole:
+      process.env.NODE_ENV === "production"
+        ? {
+            exclude: ["error", "warn"],
+          }
+        : false,
+  },
 };
 
 const withMDX = createMDX({

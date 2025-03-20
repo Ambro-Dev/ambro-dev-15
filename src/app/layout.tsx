@@ -1,10 +1,10 @@
-import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { baseURL, home, style } from "./resources";
 import { fontClasses } from "@/lib/fonts";
 import { Analytics } from "@vercel/analytics/next";
+import { constructMetadata } from "@/lib/metadata";
 
 // Statycznie zaimportowane komponenty krytyczne dla pierwszego renderowania
 import Navigation from "@/components/navigation";
@@ -15,16 +15,12 @@ import { AccessibilityWidget } from "@/components/accessibility/AccessibilityWid
 import { ScrollProgress } from "@/components/ambro-ui/scroll-progress";
 import { FloatingBubbles } from "@/components/ambro-ui/floating-bubbles";
 import Footer from "@/components/footer";
+import { Providers } from "@/app/providers";
 
 // Rozszerzone metadane zgodne z Next.js 15
-export const metadata: Metadata = {
-  metadataBase: new URL(`https://${baseURL}`),
-  title: {
-    template: `%s | ${home.title}`,
-    default: home.title,
-  },
+export const metadata = constructMetadata({
+  title: home.title,
   description: home.description,
-  applicationName: "Ambro-Dev",
   keywords: [
     "DevOps",
     "automatyzacja",
@@ -33,67 +29,11 @@ export const metadata: Metadata = {
     "AWS",
     "infrastruktura IT",
   ],
-  authors: [{ name: "Ambro-Dev", url: `https://${baseURL}` }],
-  creator: "Ambro-Dev",
-  publisher: "Ambro-Dev",
-  formatDetection: {
-    email: true,
-    address: true,
-    telephone: true,
-  },
-  alternates: {
-    canonical: `https://${baseURL}`,
-    languages: {
-      "pl-PL": `https://${baseURL}`,
-    },
-  },
-  openGraph: {
-    title: `Ambro-Dev | ${home.title}`,
-    description:
-      "Automatyzacja procesów, chmurowe rozwiązania, administracja serwerami, tworzenie stron internetowych i aplikacji webowych",
-    url: `https://${baseURL}`,
-    siteName: "Ambro-Dev",
-    locale: "pl_PL",
-    type: "website",
-    images: [
-      {
-        url: `https://${baseURL}/og-image.jpg`,
-        width: 1200,
-        height: 630,
-        alt: "Ambro-Dev",
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: `Ambro-Dev | ${home.title}`,
-    description: home.description,
-    images: [`https://${baseURL}/og-image.jpg`],
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
-    },
-  },
-  verification: {
-    google: "twój-identyfikator-google-site-verification",
-  },
-  appleWebApp: {
-    title: "Ambro-Dev",
-    statusBarStyle: "black-translucent",
-    capable: true,
-  },
-  category: "technology",
-};
+  canonical: `https://${baseURL}`,
+});
 
 // Viewport settings
-export const viewport: Viewport = {
+export const viewport = {
   themeColor: "#000000",
   width: "device-width",
   initialScale: 1,
@@ -119,7 +59,7 @@ export default function RootLayout({
       data-border={style.border}
       data-surface={style.surface}
       data-transition={style.transition}
-      className={fontClasses}
+      className={`${fontClasses} dark`}
       suppressHydrationWarning
     >
       <head>
@@ -140,6 +80,17 @@ export default function RootLayout({
           crossOrigin="anonymous"
         />
 
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+    :root { color-scheme: dark; }
+    body { background-color: #000000; color: #ffffff; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .page-transition { animation: fadeIn 0.5s ease-in-out; }
+  `,
+          }}
+        />
+
         {/* PWA manifest */}
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
@@ -148,57 +99,58 @@ export default function RootLayout({
         <Analytics />
         <AccessibilityProvider>
           {/* Analytics Component */}
-
-          <ThemeProvider>
-            {/* Scroll Progress Indicator zoptymalizowany pod Next.js */}
-            <Suspense
-              fallback={
-                <div className="h-1 w-full bg-transparent fixed top-0 z-50" />
-              }
-            >
-              <ScrollProgress
-                position="top"
-                color="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"
-                zIndex={60}
-                height={3}
-                borderRadius="rounded-none"
-              />
-            </Suspense>
-
-            {/* Navigation - prerendered */}
-            <Navigation />
-
-            <div className="flex-grow relative overflow-hidden">
-              {/* Floating bubbles - lazy loaded */}
-              <Suspense fallback={<div className="absolute inset-0 z-0" />}>
-                <div className="absolute inset-0 z-0">
-                  <FloatingBubbles
-                    count={10} // Zredukowana liczba dla lepszej wydajności
-                    minSize={2}
-                    maxSize={6}
-                    color="rgba(99, 102, 241, 0.3)"
-                    minSpeed={0.5}
-                    maxSpeed={1}
-                    fixed
-                    className="h-full w-full opacity-50"
-                  />
-                </div>
+          <Providers>
+            <ThemeProvider>
+              {/* Scroll Progress Indicator zoptymalizowany pod Next.js */}
+              <Suspense
+                fallback={
+                  <div className="h-1 w-full bg-transparent fixed top-0 z-50" />
+                }
+              >
+                <ScrollProgress
+                  position="top"
+                  color="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"
+                  zIndex={60}
+                  height={3}
+                  borderRadius="rounded-none"
+                />
               </Suspense>
 
-              {/* Main content with ID for skip-to-content */}
-              <main id="main-content" tabIndex={-1}>
-                {children}
-              </main>
-            </div>
+              {/* Navigation - prerendered */}
+              <Navigation />
 
-            {/* Footer - lazy loaded */}
-            <Suspense fallback={<div className="h-64 bg-black" />}>
-              <Footer />
-            </Suspense>
+              <div className="flex-grow relative overflow-hidden">
+                {/* Floating bubbles - lazy loaded */}
+                <Suspense fallback={<div className="absolute inset-0 z-0" />}>
+                  <div className="absolute inset-0 z-0">
+                    <FloatingBubbles
+                      count={10} // Zredukowana liczba dla lepszej wydajności
+                      minSize={2}
+                      maxSize={6}
+                      color="rgba(99, 102, 241, 0.3)"
+                      minSpeed={0.5}
+                      maxSpeed={1}
+                      fixed
+                      className="h-full w-full opacity-50"
+                    />
+                  </div>
+                </Suspense>
 
-            {/* Widget dostępności */}
-            <AccessibilityWidget />
-          </ThemeProvider>
+                {/* Main content with ID for skip-to-content */}
+                <main id="main-content" tabIndex={-1}>
+                  {children}
+                </main>
+              </div>
+
+              {/* Footer - lazy loaded */}
+              <Suspense fallback={<div className="h-64 bg-black" />}>
+                <Footer />
+              </Suspense>
+
+              {/* Widget dostępności */}
+              <AccessibilityWidget />
+            </ThemeProvider>
+          </Providers>
         </AccessibilityProvider>
       </body>
     </html>

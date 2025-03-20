@@ -7,6 +7,7 @@ import {
   useEffect,
   useCallback,
   useMemo,
+  useRef,
 } from "react";
 
 export const SmoothScroll: FC<{
@@ -31,6 +32,7 @@ export const SmoothScroll: FC<{
 }) => {
   // Create the motion value at the component level
   const scrollY = useMotionValue(0);
+  const isScrolling = useRef(false);
 
   // Memoize the animation options to avoid recreating objects
   const animationOptions = useMemo(
@@ -51,6 +53,10 @@ export const SmoothScroll: FC<{
         return;
       }
 
+      // Prevent multiple animations
+      if (isScrolling.current) return;
+      isScrolling.current = true;
+
       // Set the current value
       scrollY.set(initialY);
 
@@ -64,6 +70,7 @@ export const SmoothScroll: FC<{
         ...animationOptions,
         onComplete: () => {
           unsubscribe();
+          isScrolling.current = false;
         },
       });
     },
@@ -76,6 +83,7 @@ export const SmoothScroll: FC<{
     const isMobile = window.innerWidth < 768;
     if (isMobile && scrollResistance > 0) return;
 
+    // Use event delegation for better performance
     const handleClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
 
@@ -92,23 +100,29 @@ export const SmoothScroll: FC<{
       if (!targetSelector) return;
 
       e.preventDefault();
-      const element = document.querySelector(targetSelector);
-      if (!element) return;
 
-      const targetPosition =
-        element.getBoundingClientRect().top + window.pageYOffset - offset;
+      // Use requestAnimationFrame for better performance
+      requestAnimationFrame(() => {
+        const element = document.querySelector(targetSelector);
+        if (!element) return;
 
-      if (behavior === "smooth") {
-        scrollWithFramer(targetPosition, window.pageYOffset);
-      } else {
-        window.scrollTo({
-          top: targetPosition,
-          behavior,
-        });
-      }
+        const targetPosition =
+          element.getBoundingClientRect().top + window.pageYOffset - offset;
+
+        if (behavior === "smooth") {
+          scrollWithFramer(targetPosition, window.pageYOffset);
+        } else {
+          window.scrollTo({
+            top: targetPosition,
+            behavior,
+          });
+        }
+      });
     };
 
-    document.addEventListener("click", handleClick);
+    // Use passive event listener where possible
+    document.addEventListener("click", handleClick, { passive: false });
+
     return () => {
       document.removeEventListener("click", handleClick);
     };

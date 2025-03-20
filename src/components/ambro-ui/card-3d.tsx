@@ -12,11 +12,13 @@ import {
 } from "react";
 import { twMerge } from "tailwind-merge";
 import { motion } from "framer-motion";
+import { Card } from "@heroui/react";
 
 /**
  * Card3D Component
  *
- * Creates a 3D card with interactive tilt effects and customizable styling.
+ * Creates a 3D card with interactive tilt effects and customizable styling using HeroUI.
+ * Supports modern glassmorphism and neumorphism effects.
  *
  * @param children - Content to display inside the card
  * @param className - Additional CSS classes
@@ -40,6 +42,11 @@ import { motion } from "framer-motion";
  * @param height - Card height
  * @param width - Card width
  * @param onClick - Click handler function
+ * @param variant - Card style variant
+ * @param size - Card size
+ * @param hoverEffect - Hover effect style
+ * @param glassEffect - Glassmorphism effect configuration
+ * @param neumorphicEffect - Neumorphism effect configuration
  */
 export const Card3D: FC<{
   children: ReactNode;
@@ -64,6 +71,28 @@ export const Card3D: FC<{
   height?: string;
   width?: string;
   onClick?: () => void;
+  variant?:
+    | "default"
+    | "bordered"
+    | "elevated"
+    | "flat"
+    | "glass"
+    | "neumorphic";
+  size?: "sm" | "md" | "lg";
+  hoverEffect?: "none" | "lift" | "glow" | "glass";
+  glassEffect?: {
+    blur?: number;
+    opacity?: number;
+    borderWidth?: number;
+    borderColor?: string;
+    backdropFilter?: string;
+  };
+  neumorphicEffect?: {
+    lightColor?: string;
+    darkColor?: string;
+    intensity?: number;
+    distance?: number;
+  };
 }> = memo(
   ({
     children,
@@ -88,6 +117,22 @@ export const Card3D: FC<{
     height = "auto",
     width = "auto",
     onClick,
+    variant = "default",
+    size = "md",
+    hoverEffect = "lift",
+    glassEffect = {
+      blur: 12,
+      opacity: 0.1,
+      borderWidth: 1,
+      borderColor: "rgba(255, 255, 255, 0.2)",
+      backdropFilter: "blur(12px)",
+    },
+    neumorphicEffect = {
+      lightColor: "rgba(255, 255, 255, 0.1)",
+      darkColor: "rgba(0, 0, 0, 0.1)",
+      intensity: 0.5,
+      distance: 8,
+    },
   }) => {
     const cardRef = useRef<HTMLDivElement>(null);
 
@@ -102,7 +147,6 @@ export const Card3D: FC<{
     });
 
     // Calculate rotations including base rotations and interactive rotations
-    // Use useTransform only when interactive is true to save resources
     const finalRotateX = useTransform(tiltX, (value) =>
       interactive ? value + rotateX : rotateX
     );
@@ -170,6 +214,33 @@ export const Card3D: FC<{
       };
     }, [glowEffect, glowIntensity, glowColor]);
 
+    // Glass effect style - memoized
+    const glassStyle = useMemo(() => {
+      if (variant !== "glass") return {};
+      return {
+        background: `rgba(255, 255, 255, ${glassEffect.opacity})`,
+        backdropFilter: glassEffect.backdropFilter,
+        border: `${glassEffect.borderWidth}px solid ${glassEffect.borderColor}`,
+      };
+    }, [variant, glassEffect]);
+
+    // Neumorphic effect style - memoized
+    const neumorphicStyle = useMemo(() => {
+      if (variant !== "neumorphic") return {};
+      const { lightColor, darkColor, distance = 8 } = neumorphicEffect;
+      return {
+        background: "rgb(30, 41, 59)",
+        boxShadow: `
+          ${distance}px ${distance}px ${distance * 2}px ${
+          darkColor || "rgba(0, 0, 0, 0.1)"
+        },
+          -${distance}px -${distance}px ${distance * 2}px ${
+          lightColor || "rgba(255, 255, 255, 0.1)"
+        }
+        `,
+      };
+    }, [variant, neumorphicEffect]);
+
     // Combined styles for better performance - memoized
     const combinedStyles = useMemo(
       () => ({
@@ -178,8 +249,17 @@ export const Card3D: FC<{
         ...transformConfig,
         ...shadowStyle,
         ...glowStyle,
+        ...glassStyle,
+        ...neumorphicStyle,
       }),
-      [borderRadius, transformConfig, shadowStyle, glowStyle]
+      [
+        borderRadius,
+        transformConfig,
+        shadowStyle,
+        glowStyle,
+        glassStyle,
+        neumorphicStyle,
+      ]
     );
 
     // Memoized click handler to prevent rerenders
@@ -187,10 +267,30 @@ export const Card3D: FC<{
       if (onClick) onClick();
     }, [onClick]);
 
+    // Card classes - memoized
+    const cardClasses = useMemo(
+      () =>
+        twMerge(
+          "relative overflow-hidden transition-all duration-300",
+          variant === "bordered" && "border-2",
+          variant === "elevated" && "shadow-lg",
+          variant === "flat" && "shadow-none",
+          variant === "glass" && "backdrop-blur-md",
+          variant === "neumorphic" && "bg-slate-800",
+          size === "sm" && "p-4",
+          size === "lg" && "p-6",
+          hoverEffect === "lift" && "hover:scale-105",
+          hoverEffect === "glow" && "hover:shadow-xl",
+          hoverEffect === "glass" && "hover:bg-white/20",
+          className
+        ),
+      [variant, size, hoverEffect, className]
+    );
+
     return (
       <motion.div
         ref={cardRef}
-        className={twMerge("relative overflow-hidden", className)}
+        className={cardClasses}
         style={{
           perspective: `${perspective}px`,
           height,
@@ -199,12 +299,17 @@ export const Card3D: FC<{
         }}
         onClick={handleClick}
         {...(interactiveLayer === "parent" ? handlers : {})}
-        // Add appropriate ARIA role
         role={onClick ? "button" : undefined}
         tabIndex={onClick ? 0 : undefined}
       >
-        <motion.div
-          className={twMerge("w-full h-full border", bgColor, borderColor)}
+        <Card
+          className={twMerge(
+            "w-full h-full transition-all duration-300",
+            variant === "glass" && "bg-white/10",
+            variant === "neumorphic" && "bg-slate-800",
+            bgColor,
+            borderColor
+          )}
           style={combinedStyles}
           {...(interactiveLayer === "child" ? handlers : {})}
         >
@@ -220,7 +325,30 @@ export const Card3D: FC<{
               <div
                 className="absolute inset-0 backdrop-invert mix-blend-difference z-0"
                 style={{ borderRadius, backdropFilter: "blur(50%)" }}
-                aria-hidden="true" // Hide from screen readers as it's decorative
+                aria-hidden="true"
+              />
+            )}
+
+            {/* Glass effect overlay */}
+            {variant === "glass" && (
+              <div
+                className="absolute inset-0 z-0"
+                style={{
+                  background: `linear-gradient(135deg, rgba(255,255,255,${glassEffect.opacity}) 0%, rgba(255,255,255,0) 100%)`,
+                  backdropFilter: glassEffect.backdropFilter,
+                }}
+                aria-hidden="true"
+              />
+            )}
+
+            {/* Neumorphic light effect */}
+            {variant === "neumorphic" && (
+              <div
+                className="absolute inset-0 z-0"
+                style={{
+                  background: `radial-gradient(circle at 50% 0%, ${neumorphicEffect.lightColor}, transparent 70%)`,
+                }}
+                aria-hidden="true"
               />
             )}
 
@@ -235,7 +363,7 @@ export const Card3D: FC<{
               {children}
             </div>
           </div>
-        </motion.div>
+        </Card>
       </motion.div>
     );
   }

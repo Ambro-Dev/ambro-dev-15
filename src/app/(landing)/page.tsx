@@ -1,150 +1,203 @@
 import { Suspense } from "react";
-import type { Metadata } from "next";
-import Script from "next/script";
 import HeroSection from "@/components/layout/hero-section";
 import AboutMeSection from "@/components/layout/about-section";
 import ServicesSection from "@/components/layout/services-section";
 import { getProjects, getTestimonials } from "@/lib/data"; // Funkcje do pobrania danych
+import { constructMetadata } from "@/lib/metadata";
 
-// Częściowo wyrenderowane komponenty (Partial Prerendering - nowe w Next.js 15)
-import { unstable_noStore as noStore } from "next/cache";
-import ProjectsSection from "@/components/layout/projects-section";
-import TestimonialsSection from "@/components/layout/testimonials-section";
-import CTASection from "@/components/layout/cta-section";
+// Import optimized loading states
+import {
+  ProjectsLoading,
+  TestimonialsLoading,
+  TechStackLoading,
+  CTALoading,
+} from "@/app/loading-states";
+
+// Import for server components and dynamic loading
+import { cache } from "react";
+import dynamic from "next/dynamic";
 import { SmoothScroll } from "@/components/ambro-ui/smooth-scroll";
-import InfrastructureConcept from "@/components/layout/interactive-infrastructure";
-import TechStackSection from "@/components/layout/tech-stack-section";
+import InfrastructureWrapper from "@/components/layout/infrastructure-wrapper";
 
-// Komponent zastępczy dla dynamicznie ładowanych sekcji
-function DynamicSectionSkeleton({ title }: { title: string }) {
-  return (
-    <div className="w-full py-16 px-4">
-      <div className="max-w-6xl mx-auto">
-        <h2 className="text-3xl font-bold text-center mb-8">{title}</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="bg-gray-800/50 rounded-lg h-64 animate-pulse"
-              aria-hidden="true"
-            />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
+// Dynamically import heavyweight components
+const ProjectsSection = dynamic(
+  () => import("@/components/layout/projects-section"),
+  {
+    loading: () => <ProjectsLoading />,
+    ssr: true,
+  }
+);
+
+const TestimonialsSection = dynamic(
+  () => import("@/components/layout/testimonials-section"),
+  {
+    loading: () => <TestimonialsLoading />,
+    ssr: true,
+  }
+);
+
+const CTASection = dynamic(() => import("@/components/layout/cta-section"), {
+  loading: () => <CTALoading />,
+  ssr: true,
+});
+
+const TechStackSection = dynamic(
+  () => import("@/components/layout/tech-stack-section"),
+  {
+    loading: () => <TechStackLoading />,
+    ssr: true,
+  }
+);
 
 // Dodatkowe metadane dla strony głównej
-export const metadata: Metadata = {
+export const metadata = constructMetadata({
   title: "Ambro-Dev - DevOps, Automatyzacja, Aplikacje Webowe",
   description:
     "Kompleksowe usługi DevOps, automatyzacja procesów IT, administracja serwerami, tworzenie aplikacji webowych i optymalizacja infrastruktury.",
-  keywords:
-    "DevOps, automatyzacja, aplikacje webowe, chmura, AWS, infrastruktura IT, monitoring, CI/CD",
-};
+  keywords: [
+    "DevOps",
+    "automatyzacja",
+    "aplikacje webowe",
+    "chmura",
+    "AWS",
+    "infrastruktura IT",
+    "monitoring",
+    "CI/CD",
+  ],
+});
 
-// Asynchroniczna funkcja do pobrania projektów (Server Component)
+// Cache the data fetching to improve performance
+const getProjectsData = cache(async () => {
+  try {
+    return await getProjects();
+  } catch (error) {
+    console.error("Error fetching projects:", error);
+    return [];
+  }
+});
+
+const getTestimonialsData = cache(async () => {
+  try {
+    return await getTestimonials();
+  } catch (error) {
+    console.error("Error fetching testimonials:", error);
+    return [];
+  }
+});
+
+// Asynchroniczna funkcja do pobrania projektów (Server Component) z optymalizacją cache
 async function ProjectsData() {
-  // Wykorzystanie noStore() do wyłączenia cache dla tej części (Partial Prerendering)
-  noStore();
+  try {
+    // Pobierz projekty z cache
+    const projects = await getProjectsData();
 
-  // Pobierz projekty (symulacja opóźnienia dla demonstracji PPR)
-  const projects = await getProjects();
+    if (!projects || projects.length === 0) {
+      return (
+        <div className="py-16 text-center">
+          Failed to load projects. Please try again later.
+        </div>
+      );
+    }
 
-  return (
-    <Suspense fallback={<DynamicSectionSkeleton title="Nasze projekty" />}>
-      <ProjectsSection projects={projects} />
-    </Suspense>
-  );
+    return <ProjectsSection projects={projects} />;
+  } catch (error) {
+    console.error("Error rendering projects:", error);
+    return (
+      <div className="py-16 text-center">
+        Failed to load projects. Please try again later.
+      </div>
+    );
+  }
 }
 
-// Asynchroniczna funkcja do pobrania opinii (Server Component)
+// Asynchroniczna funkcja do pobrania opinii (Server Component) z optymalizacją cache
 async function TestimonialsData() {
-  // Wykorzystanie noStore() do wyłączenia cache dla tej części (Partial Prerendering)
-  noStore();
+  try {
+    // Pobierz opinie z cache
+    const testimonials = await getTestimonialsData();
 
-  // Pobierz opinie (symulacja opóźnienia dla demonstracji PPR)
-  const testimonials = await getTestimonials();
+    if (!testimonials || testimonials.length === 0) {
+      return (
+        <div className="py-16 text-center">
+          Failed to load testimonials. Please try again later.
+        </div>
+      );
+    }
 
-  return (
-    <Suspense fallback={<DynamicSectionSkeleton title="Opinie klientów" />}>
-      <TestimonialsSection testimonials={testimonials} />
-    </Suspense>
-  );
+    return <TestimonialsSection testimonials={testimonials} />;
+  } catch (error) {
+    console.error("Error rendering testimonials:", error);
+    return (
+      <div className="py-16 text-center">
+        Failed to load testimonials. Please try again later.
+      </div>
+    );
+  }
+}
+
+function generateHomeSchema() {
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    name: "Ambro-Dev - DevOps, Automatyzacja, Aplikacje Webowe",
+    description:
+      "Kompleksowe usługi DevOps, automatyzacja procesów IT, administracja serwerami, tworzenie aplikacji webowych i optymalizacja infrastruktury.",
+    mainEntity: {
+      "@type": "ProfessionalService",
+      name: "Ambro-Dev",
+      description:
+        "Kompleksowe usługi DevOps, automatyzacja procesów IT, administracja serwerami, tworzenie aplikacji webowych i optymalizacja infrastruktury.",
+      image: "/logo.webp",
+      telephone: "+48123456789",
+      email: "kontakt@ambro-dev.pl",
+      address: {
+        "@type": "PostalAddress",
+        addressCountry: "PL",
+      },
+      priceRange: "$$",
+      openingHours: "Mo-Fr 09:00-17:00",
+      serviceType: [
+        "DevOps",
+        "Cloud Migration",
+        "Web Development",
+        "IT Automation",
+      ],
+    },
+  };
 }
 
 export default function Home() {
   return (
     <>
-      {/* JSON-LD dla strony głównej */}
-      <Script
-        id="structured-data-home"
+      <script
         type="application/ld+json"
-        // biome-ignore lint/security/noDangerouslySetInnerHtml: <explanation>
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "WebPage",
-            name: "Ambro-Dev - DevOps, Automatyzacja, Aplikacje Webowe",
-            description:
-              "Kompleksowe usługi DevOps, automatyzacja procesów IT, administracja serwerami, tworzenie aplikacji webowych i optymalizacja infrastruktury.",
-            mainEntity: {
-              "@type": "ProfessionalService",
-              name: "Ambro-Dev",
-              description:
-                "Kompleksowe usługi DevOps, automatyzacja procesów IT, administracja serwerami, tworzenie aplikacji webowych i optymalizacja infrastruktury.",
-              image: "/logo.webp",
-              telephone: "+48123456789",
-              email: "kontakt@ambro-dev.pl",
-              address: {
-                "@type": "PostalAddress",
-                addressCountry: "PL",
-              },
-              priceRange: "$$",
-              openingHours: "Mo-Fr 09:00-17:00",
-              serviceType: [
-                "DevOps",
-                "Cloud Migration",
-                "Web Development",
-                "IT Automation",
-              ],
-            },
-          }),
+          __html: JSON.stringify(generateHomeSchema()),
         }}
       />
-
       <main className="min-h-screen text-white relative overflow-hidden md:pt-0 pt-28">
-        {/* Smooth Scroll */}
+        {/* Smooth Scroll with reduced motion support */}
         <SmoothScroll>
-          {/* Prerendered Sections (szybkie ładowanie) */}
+          {/* Prerendered Sections (fast loading, critical content) */}
           <HeroSection />
           <AboutMeSection />
           <ServicesSection />
 
-          {/* Partial Prerendering (ładowane dynamicznie) */}
-          <Suspense
-            fallback={<DynamicSectionSkeleton title="Infrastruktura" />}
-          >
-            <InfrastructureConcept />
+          {/* Dynamic Sections (lazy loaded) - now using client component wrapper */}
+          <InfrastructureWrapper />
+
+          {/* Server Components with async data fetching */}
+          <Suspense fallback={<ProjectsLoading />}>
+            <ProjectsData />
           </Suspense>
 
-          {/* Server Components z asynchronicznym pobieraniem danych */}
-          <ProjectsData />
+          <TechStackSection />
 
-          <Suspense fallback={<DynamicSectionSkeleton title="Technologie" />}>
-            <TechStackSection />
+          <Suspense fallback={<TestimonialsLoading />}>
+            <TestimonialsData />
           </Suspense>
 
-          <TestimonialsData />
-
-          <Suspense
-            fallback={
-              <div className="h-48 bg-gradient-to-r from-indigo-500 to-purple-600" />
-            }
-          >
-            <CTASection />
-          </Suspense>
+          <CTASection />
         </SmoothScroll>
       </main>
     </>
