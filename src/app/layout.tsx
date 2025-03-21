@@ -17,6 +17,9 @@ import { FloatingBubbles } from "@/components/ambro-ui/floating-bubbles";
 import Footer from "@/components/footer";
 import { Providers } from "@/app/providers";
 
+// Performance optimizer via client component wrapper
+import { PerformanceOptimizerWrapper } from "@/components/client-wrapper";
+
 // Rozszerzone metadane zgodne z Next.js 15
 export const metadata = constructMetadata({
   title: home.title,
@@ -96,6 +99,9 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
       </head>
       <body className="flex flex-col min-h-screen">
+        {/* Performance Optimizer */}
+        <PerformanceOptimizerWrapper />
+        
         <Analytics />
         <AccessibilityProvider>
           {/* Analytics Component */}
@@ -124,7 +130,7 @@ export default function RootLayout({
                 <Suspense fallback={<div className="absolute inset-0 z-0" />}>
                   <div className="absolute inset-0 z-0">
                     <FloatingBubbles
-                      count={10} // Zredukowana liczba dla lepszej wydajności
+                      count={6} // Zredukowana liczba dla lepszej wydajności
                       minSize={2}
                       maxSize={6}
                       color="rgba(99, 102, 241, 0.3)"
@@ -152,6 +158,22 @@ export default function RootLayout({
             </ThemeProvider>
           </Providers>
         </AccessibilityProvider>
+
+        {/* Script to mark body as loaded after page loads */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              document.addEventListener('DOMContentLoaded', function() {
+                document.body.classList.add('loaded');
+              });
+              
+              // Force visibility on navigation
+              if (window.performance && window.performance.navigation.type === window.performance.navigation.TYPE_BACK_FORWARD) {
+                document.body.classList.add('force-visible');
+              }
+            `,
+          }}
+        />
       </body>
     </html>
   );

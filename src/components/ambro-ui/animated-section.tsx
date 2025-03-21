@@ -6,10 +6,10 @@ import {
   useInView,
   type Variants,
 } from "framer-motion";
-import React, { type FC, type ReactNode, useRef, useMemo, memo } from "react";
+import React, { type FC, type ReactNode, useRef, useMemo, memo, useEffect, useState } from "react";
 
 /**
- * AnimatedSection Component
+ * AnimatedSection Component - Performance Optimized
  *
  * Creates a section with animation effects that trigger when the element enters the viewport.
  *
@@ -25,6 +25,7 @@ import React, { type FC, type ReactNode, useRef, useMemo, memo } from "react";
  * @param once - Whether to trigger animation only once
  * @param staggerChildren - Delay between child animations in seconds
  * @param customVariants - Custom animation variants
+ * @param disableOnMobile - Whether to disable animations on mobile devices
  */
 export const AnimatedSection: FC<{
   children: ReactNode;
@@ -45,6 +46,7 @@ export const AnimatedSection: FC<{
   once?: boolean;
   staggerChildren?: number;
   customVariants?: Variants;
+  disableOnMobile?: boolean;
 }> = memo(
   ({
     children,
@@ -53,18 +55,67 @@ export const AnimatedSection: FC<{
     threshold = 0.1,
     as: Component = motion.div,
     animation = "slideUp",
-    duration = 0.8,
-    distance = 50,
+    duration = 0.6,
+    distance = 30,
     easing = [0.215, 0.61, 0.355, 1],
     once = true,
     staggerChildren = 0,
     customVariants,
+    disableOnMobile = true,
   }) => {
     const ref = useRef<HTMLDivElement>(null);
+    const [isMobile, setIsMobile] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
+    
+    // Detect mobile devices for animation reduction
+    useEffect(() => {
+      // Mark as mounted first
+      setIsMounted(true);
+      
+      const checkMobile = () => {
+        setIsMobile(window.innerWidth < 768);
+      };
+      
+      checkMobile();
+      window.addEventListener('resize', checkMobile);
+      
+      return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
+    // Skip animations on mobile if disabled
+    if (disableOnMobile && isMobile) {
+      return <div className={className}>{children}</div>;
+    }
+
     const inView = useInView(ref, {
       amount: threshold,
       once,
     });
+
+    // Force visibility after component mounts
+    useEffect(() => {
+      // Only run after component has mounted to prevent hydration mismatch
+      if (!isMounted) return;
+      
+      // Force immediate visibility for hero sections
+      if (className?.includes('hero') || document.body.classList.contains('hero-visible')) {
+        if (ref.current) {
+          ref.current.dataset.forceVisible = 'true';
+          ref.current.style.opacity = '1';
+          ref.current.style.transform = 'none';
+        }
+        return;
+      }
+      
+      // For other sections, short delay to prevent jank
+      const timer = setTimeout(() => {
+        if (ref.current) {
+          ref.current.dataset.forceVisible = 'true';
+        }
+      }, 50);
+      
+      return () => clearTimeout(timer);
+    }, [className, isMounted]);
 
     // Predefined animation variants - memoized to prevent recreation on every render
     const animations = useMemo<Record<string, Variants>>(
@@ -74,20 +125,20 @@ export const AnimatedSection: FC<{
           visible: { opacity: 1 },
         },
         slideUp: {
-          hidden: { opacity: 0, y: distance },
-          visible: { opacity: 1, y: 0 },
+          hidden: { opacity: 0, y: distance, willChange: "opacity, transform" },
+          visible: { opacity: 1, y: 0, willChange: "opacity, transform" },
         },
         slideLeft: {
-          hidden: { opacity: 0, x: distance },
-          visible: { opacity: 1, x: 0 },
+          hidden: { opacity: 0, x: distance, willChange: "opacity, transform" },
+          visible: { opacity: 1, x: 0, willChange: "opacity, transform" },
         },
         slideRight: {
-          hidden: { opacity: 0, x: -distance },
-          visible: { opacity: 1, x: 0 },
+          hidden: { opacity: 0, x: -distance, willChange: "opacity, transform" },
+          visible: { opacity: 1, x: 0, willChange: "opacity, transform" },
         },
         zoomIn: {
-          hidden: { opacity: 0, scale: 0.9 },
-          visible: { opacity: 1, scale: 1 },
+          hidden: { opacity: 0, scale: 0.95, willChange: "opacity, transform" },
+          visible: { opacity: 1, scale: 1, willChange: "opacity, transform" },
         },
       }),
       [distance]
@@ -108,7 +159,7 @@ export const AnimatedSection: FC<{
               visible: {
                 opacity: 1,
                 transition: {
-                  staggerChildren,
+                  staggerChildren: Math.min(staggerChildren, 0.05),
                   delayChildren: delay,
                 },
               },
@@ -131,7 +182,11 @@ export const AnimatedSection: FC<{
     const processedChildren = useMemo(() => {
       if (!staggerChildren) return children;
 
-      return React.Children.map(children, (child) => (
+      // Limit the number of animated children to improve performance
+      const childrenArray = React.Children.toArray(children);
+      const maxAnimatedChildren = 8; // Limit staggered children
+      
+      return React.Children.map(childrenArray.slice(0, maxAnimatedChildren), (child) => (
         <motion.div
           key={React.isValidElement(child) && child.key ? child.key : undefined}
           variants={selectedVariants}
@@ -139,22 +194,36 @@ export const AnimatedSection: FC<{
             duration,
             ease: easing,
           }}
+          style={{ 
+            willChange: "transform, opacity",
+            transform: "translateZ(0)" // Hardware acceleration
+          }}
         >
           {child}
         </motion.div>
-      ));
+      )).concat(
+        // Render remaining children without animation
+        childrenArray.slice(maxAnimatedChildren).map((child, i) => (
+          <div key={`static-${i}`}>{child}</div>
+        ))
+      );
     }, [children, staggerChildren, selectedVariants, duration, easing]);
 
     return (
       <Component
         ref={ref}
-        initial="hidden"
-        animate={inView ? "visible" : "hidden"}
+        initial={isMounted ? "hidden" : false}
+        animate={isMounted ? (inView ? "visible" : "hidden") : false}
         variants={containerVariants}
         transition={transitionConfig}
         className={className}
-        // Add data attribute for easier debugging
+        style={{ 
+          willChange: inView && isMounted ? "opacity, transform" : "auto",
+          transform: "translateZ(0)", // Hardware acceleration
+          backfaceVisibility: "hidden",
+        }}
         data-in-view={inView}
+        data-mounted={isMounted}
       >
         {processedChildren}
       </Component>

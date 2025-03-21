@@ -27,19 +27,46 @@ const HeroSection = memo(() => {
   const prefersReducedMotion = useReducedMotion();
   const sectionRef = useRef<HTMLElement>(null);
   const [isHovering, setIsHovering] = useState<boolean>(false);
-  const [isClient, setIsClient] = useState<boolean>(false);
+  const [mounted, setMounted] = useState<boolean>(false);
+  const [isVisible, setIsVisible] = useState<boolean>(true); // Start as visible for SSR
 
-  // Set isClient to true once component mounts (client-side only)
+  // Client-side initialization
   useEffect(() => {
-    setIsClient(true);
+    // Mark as mounted
+    setMounted(true);
+    
+    // Apply client-side only logic in a safe way (after hydration)
+    const handleMount = () => {
+      // Force component to be visible immediately on mount
+      setIsVisible(true);
+      
+      // Scroll to top with fewer paint operations
+      if (window.scrollY !== 0) {
+        window.scrollTo({
+          top: 0,
+          behavior: 'instant'
+        });
+      }
+      
+      // Add hero-visible class safely
+      document.body.classList.add('hero-visible');
+    };
+    
+    // Use requestAnimationFrame to ensure this happens after hydration
+    requestAnimationFrame(handleMount);
+    
+    return () => {
+      document.body.classList.remove('hero-visible');
+    };
   }, []);
 
-  // Scroll-driven animations
+  // Scroll-driven animations - only used client-side
   const { scrollYProgress } = useScroll({
     target: sectionRef,
     offset: ["start start", "end start"],
   });
 
+  // These transformations are only used on client side
   const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
   const y = useTransform(scrollYProgress, [0, 0.5], [0, 100]);
   const scale = useTransform(scrollYProgress, [0, 0.5], [1, 0.9]);
@@ -78,7 +105,11 @@ const HeroSection = memo(() => {
   return (
     <section
       ref={sectionRef}
-      className="relative min-h-[100dvh] flex flex-col items-center justify-center px-4 md:px-6 overflow-hidden"
+      className="relative min-h-[100dvh] flex flex-col items-center justify-center px-4 md:px-6 overflow-hidden will-change-transform"
+      style={{ 
+        transform: 'translateZ(0)',
+        backfaceVisibility: 'hidden'
+      }}
     >
       {/* Background elements */}
       <HeroBackground
@@ -88,15 +119,20 @@ const HeroSection = memo(() => {
 
       <AnimatedSection
         animation="fadeIn"
-        delay={0.2}
+        delay={0.1}
+        duration={0.4}
         className="relative z-10 max-w-5xl mx-auto text-center"
+        once={true}
+        threshold={0.01}
+        disableOnMobile={false}
       >
         <motion.div
           {...animationSettings}
           style={{
-            opacity: prefersReducedMotion ? 1 : opacity,
-            y: prefersReducedMotion ? 0 : y,
-            scale: prefersReducedMotion ? 1 : scale,
+            // For SSR, ensure consistent initial state
+            opacity: mounted ? (isVisible ? (prefersReducedMotion ? 1 : opacity) : 1) : 1,
+            y: mounted ? (isVisible ? (prefersReducedMotion ? 0 : y) : 0) : 0,
+            scale: mounted ? (isVisible ? (prefersReducedMotion ? 1 : scale) : 1) : 1,
           }}
         >
           {/* Interactive badge */}
@@ -139,7 +175,7 @@ const HeroSection = memo(() => {
 
           {/* Scroll indicator */}
           <ScrollIndicator
-            isClient={isClient}
+            isClient={mounted}
             prefersReducedMotion={prefersReducedMotion}
             itemVariants={itemVariants}
           />

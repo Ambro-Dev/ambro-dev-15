@@ -8,6 +8,7 @@ import {
   useCallback,
   useMemo,
   useRef,
+  useState,
 } from "react";
 
 export const SmoothScroll: FC<{
@@ -20,19 +21,40 @@ export const SmoothScroll: FC<{
   onlyLinks?: boolean;
   selector?: string;
   scrollResistance?: number;
+  autoDisableOnMobile?: boolean;
 }> = ({
   children,
   offset = 80,
   disabled = false,
   behavior = "smooth",
-  duration = 1,
+  duration = 0.8,
   ease = [0.32, 0.72, 0, 1],
   onlyLinks = true,
   scrollResistance = 5,
+  autoDisableOnMobile = true,
 }) => {
   // Create the motion value at the component level
   const scrollY = useMotionValue(0);
   const isScrolling = useRef(false);
+  const [shouldDisable, setShouldDisable] = useState(false);
+  
+  // Check for mobile devices to automatically disable
+  useEffect(() => {
+    if (autoDisableOnMobile) {
+      const checkMobile = () => {
+        setShouldDisable(window.innerWidth < 768);
+      };
+      
+      checkMobile();
+      window.addEventListener('resize', checkMobile);
+      return () => window.removeEventListener('resize', checkMobile);
+    }
+  }, [autoDisableOnMobile]);
+
+  // Complete disable if needed
+  if (disabled || shouldDisable) {
+    return <>{children}</>;
+  }
 
   // Memoize the animation options to avoid recreating objects
   const animationOptions = useMemo(
@@ -48,7 +70,8 @@ export const SmoothScroll: FC<{
     (targetY: number, initialY: number) => {
       const difference = targetY - initialY;
 
-      if (Math.abs(difference) < 10) {
+      // Skip animation for small distances
+      if (Math.abs(difference) < 50) {
         window.scrollTo(0, targetY);
         return;
       }
@@ -60,16 +83,23 @@ export const SmoothScroll: FC<{
       // Set the current value
       scrollY.set(initialY);
 
-      // Update window scroll position when the motion value changes
-      const unsubscribe = scrollY.onChange((latest) => {
-        window.scrollTo(0, latest);
-      });
+      // Use requestAnimationFrame for smoother performance
+      let rafId: number;
+      let lastScrollPosition = initialY;
+      
+      const handleScroll = () => {
+        window.scrollTo(0, scrollY.get());
+        lastScrollPosition = scrollY.get();
+        rafId = requestAnimationFrame(handleScroll);
+      };
+      
+      rafId = requestAnimationFrame(handleScroll);
 
       // Animate the motion value using memoized options
       animate(scrollY, targetY, {
         ...animationOptions,
         onComplete: () => {
-          unsubscribe();
+          cancelAnimationFrame(rafId);
           isScrolling.current = false;
         },
       });

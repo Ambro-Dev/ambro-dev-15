@@ -1,7 +1,7 @@
 // src/app/projekty/[id]/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, notFound } from "next/navigation";
 import Link from "next/link";
 import { FloatingBubbles } from "@/components/ambro-ui/floating-bubbles";
@@ -14,8 +14,8 @@ import { AnimatedSection } from "@/components/ambro-ui/animated-section";
 import { EnhancedButton } from "@/components/ambro-ui/enhanced-button";
 import { CodeBlock } from "@/components/ambro-ui/code-block";
 import { SectionDivider } from "@/components/ambro-ui/section-divider";
-import { TiltCard } from "@/components/ambro-ui/tilt-card";
 import Image from "next/image";
+import { motion, useScroll, useTransform } from "framer-motion";
 
 // Importujemy dane z poprzedniego pliku
 // Uwaga: W rzeczywistej aplikacji prawdopodobnie te dane powinny być przechowywane w bazie danych
@@ -451,6 +451,14 @@ export default function ProjectDetailsPage() {
   const params = useParams();
   const projectId = params.id as string;
   const [activeImage, setActiveImage] = useState(0);
+  const [isMounted, setIsMounted] = useState(false);
+  const { scrollY } = useScroll();
+  const headerOpacity = useTransform(scrollY, [0, 200], [1, 0.95]);
+  const headerBlur = useTransform(scrollY, [0, 200], [0, 8]);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Znajdź projekt na podstawie ID
   const project = projekty.find((p) => p.id === projectId);
@@ -461,13 +469,16 @@ export default function ProjectDetailsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-black text-white relative overflow-hidden">
+    <main className="min-h-screen bg-gradient-to-br from-black via-slate-900 to-black text-white relative overflow-hidden">
+      {/* Radial gradient background */}
+      <div className="fixed inset-0 w-full h-full bg-grid-pattern opacity-5 pointer-events-none" />
+      
       {/* Background Effect */}
       <FloatingBubbles
-        count={20}
+        count={30}
         fixed
-        color="rgba(99, 102, 241, 0.2)"
-        maxSize={100}
+        color="rgba(99, 102, 241, 0.15)"
+        maxSize={150}
         minSize={20}
         interactive
       />
@@ -476,20 +487,45 @@ export default function ProjectDetailsPage() {
       <ScrollProgress
         position="top"
         color="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"
+        height={3}
       />
 
       <SmoothScroll>
+        {/* Sticky Header with glass effect */}
+        {isMounted && (
+          <motion.div 
+            className="sticky top-0 z-50 pt-6 pb-4 px-6 backdrop-blur-md bg-black/10"
+            style={{ 
+              opacity: headerOpacity,
+              backdropFilter: `blur(${headerBlur.get()}px)`,
+              borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
+            }}
+          >
+            <div className="max-w-6xl mx-auto flex items-center justify-between">
+              <Link href="/projekty">
+                <EnhancedButton variant="outline" size="sm">
+                  ← Powrót do projektów
+                </EnhancedButton>
+              </Link>
+              
+              <div className="hidden md:block">
+                <GradientText
+                  from={project.color.split(" ")[0].replace("from-", "")}
+                  to={project.color.split(" ")[1].replace("to-", "")}
+                  className="text-xl font-bold"
+                >
+                  {project.title}
+                </GradientText>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         {/* Header Section */}
         <section className="py-24 px-6">
           <div className="max-w-6xl mx-auto">
             <AnimatedSection animation="fadeIn">
               <div className="text-center">
-                <Link href="/projekty">
-                  <EnhancedButton variant="outline" size="sm" className="mb-8">
-                    ← Powrót do projektów
-                  </EnhancedButton>
-                </Link>
-
                 <SectionHeading
                   title={project.title}
                   subtitle={project.shortDesc}
@@ -507,309 +543,377 @@ export default function ProjectDetailsPage() {
 
             {/* Project Gallery */}
             <div className="mt-16">
-              <AnimatedSection animation="slideUp" delay={0.3}>
-                <div className="grid md:grid-cols-3 gap-6">
+              <AnimatedSection animation="slideUp" delay={0.2}>
+                <div className="relative group mb-12">
+                  {/* Card glass background with subtle glow */}
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500/30 via-purple-500/20 to-pink-500/30 rounded-2xl blur-lg opacity-75 group-hover:opacity-100 transition-opacity duration-300" />
+                  
+                  <div className="relative backdrop-blur-xl bg-black/20 border border-white/10 p-6 rounded-2xl overflow-hidden shadow-xl">
+                    {/* Light effect overlays */}
+                    <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                    <div className="absolute bottom-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+                    <div className="absolute left-0 inset-y-0 w-px bg-gradient-to-b from-transparent via-white/10 to-transparent" />
+                    
+                    <div className="grid md:grid-cols-3 gap-6">
+                      <div className="md:col-span-2">
+                        <div className="relative rounded-xl overflow-hidden border border-white/10 shadow-lg">
+                          <Image
+                            src={project.images[activeImage]}
+                            alt={`${project.title} - widok ${activeImage + 1}`}
+                            className="w-full h-full object-cover rounded-xl"
+                            width={800}
+                            height={500}
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 md:grid-cols-1 gap-4">
+                        {project.images.map((img, index) => (
+                          <div
+                            key={`${img}-${index}`}
+                            className={`cursor-pointer transition-all duration-300 rounded-lg overflow-hidden border ${
+                              activeImage === index
+                                ? "border-indigo-500 shadow-lg shadow-indigo-500/20"
+                                : "border-white/10 opacity-70 hover:opacity-100"
+                            }`}
+                            onClick={() => setActiveImage(index)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                setActiveImage(index);
+                              }
+                            }}
+                            role="button"
+                            tabIndex={0}
+                            aria-label={`Wybierz zdjęcie ${index + 1}`}
+                          >
+                            <Image
+                              src={img}
+                              alt={`${project.title} - miniatua ${index + 1}`}
+                              className="w-full h-full object-cover"
+                              width={400}
+                              height={200}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </AnimatedSection>
+
+              {/* Project Info Section */}
+              <AnimatedSection animation="fadeIn" delay={0.3}>
+                <div className="grid md:grid-cols-3 gap-8">
+                  {/* Project Description */}
                   <div className="md:col-span-2">
+                    <div className="relative group h-full">
+                      <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500/20 via-purple-500/10 to-pink-500/20 rounded-2xl blur-lg opacity-60 group-hover:opacity-100 transition-opacity duration-300" />
+                      
+                      <Card3D
+                        interactive={false}
+                        glowEffect
+                        shadow
+                        bgColor="bg-black/20"
+                        borderColor="border-white/10"
+                        height="100%"
+                        variant="glass"
+                        glassEffect={{
+                          blur: 16,
+                          opacity: 0.05,
+                          borderWidth: 1,
+                          borderColor: "rgba(255, 255, 255, 0.1)",
+                          backdropFilter: "blur(16px)"
+                        }}
+                      >
+                        <div className="p-6">
+                          <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+                            <span className="bg-indigo-500/20 p-1.5 rounded-md">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-400">
+                                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                              </svg>
+                            </span>
+                            O projekcie
+                          </h2>
+                          <div className="text-gray-300 space-y-4">
+                            <p className="leading-relaxed">{project.description}</p>
+                          </div>
+                        </div>
+                      </Card3D>
+                    </div>
+                  </div>
+
+                  {/* Project Details */}
+                  <div className="relative group h-full">
+                    <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-500/20 via-purple-500/10 to-indigo-500/20 rounded-2xl blur-lg opacity-60 group-hover:opacity-100 transition-opacity duration-300" />
+                    
                     <Card3D
                       interactive={false}
                       glowEffect
                       shadow
-                      borderColor="border-indigo-500/20"
+                      bgColor="bg-black/20"
+                      borderColor="border-white/10"
                       height="100%"
+                      variant="glass"
+                      glassEffect={{
+                        blur: 16,
+                        opacity: 0.05,
+                        borderWidth: 1,
+                        borderColor: "rgba(255, 255, 255, 0.1)",
+                        backdropFilter: "blur(16px)"
+                      }}
                     >
-                      <Image
-                        src={project.images[activeImage]}
-                        alt={`${project.title} - widok ${activeImage + 1}`}
-                        className="w-full h-full object-cover rounded-xl"
-                        layout="responsive"
-                        width={800}
-                        height={500}
-                      />
-                    </Card3D>
-                  </div>
-
-                  <div className="grid grid-cols-2 md:grid-cols-1 gap-4">
-                    {project.images.map((img, index) => (
-                      <div
-                        key={img}
-                        className={`cursor-pointer transition-all ${
-                          activeImage === index
-                            ? "ring-2 ring-indigo-500"
-                            : "opacity-70 hover:opacity-100"
-                        }`}
-                        onClick={() => setActiveImage(index)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            setActiveImage(index);
-                          }
-                        }}
-                      >
-                        <Image
-                          src={img}
-                          alt={`${project.title} - miniatua ${index + 1}`}
-                          className="w-full h-32 object-cover rounded-lg"
-                          layout="responsive"
-                          width={800}
-                          height={500}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </AnimatedSection>
-            </div>
-
-            {/* Project Info */}
-            <div className="mt-16 grid md:grid-cols-3 gap-8">
-              <AnimatedSection
-                animation="slideLeft"
-                delay={0.3}
-                className="md:col-span-2"
-              >
-                <Card3D
-                  interactive={false}
-                  glowEffect
-                  shadow
-                  bgColor="bg-gray-900/50"
-                  borderColor="border-indigo-500/20"
-                  height="100%"
-                >
-                  <div className="p-8">
-                    <h3 className="text-2xl font-bold mb-6">O projekcie</h3>
-                    <p className="text-gray-300 mb-8 leading-relaxed">
-                      {project.description}
-                    </p>
-
-                    <div className="grid md:grid-cols-2 gap-8 mb-8">
-                      <div>
-                        <h4 className="text-xl font-bold mb-4">Wyzwanie</h4>
-                        <p className="text-gray-300">{project.challenge}</p>
-                      </div>
-
-                      <div>
-                        <h4 className="text-xl font-bold mb-4">Rozwiązanie</h4>
-                        <p className="text-gray-300">{project.solution}</p>
-                      </div>
-                    </div>
-
-                    <h4 className="text-xl font-bold mb-4">Wyniki</h4>
-                    <ul className="list-disc pl-5 text-gray-300 space-y-2">
-                      {project.outcomes.map((outcome, index) => (
-                        // biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
-                        <li key={index}>{outcome}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </Card3D>
-              </AnimatedSection>
-
-              <AnimatedSection animation="slideRight" delay={0.4}>
-                <Card3D
-                  interactive={false}
-                  glowEffect
-                  shadow
-                  bgColor="bg-gray-900/50"
-                  borderColor="border-indigo-500/20"
-                  height="100%"
-                >
-                  <div className="p-8">
-                    <h3 className="text-2xl font-bold mb-6">
-                      Szczegóły projektu
-                    </h3>
-
-                    <div className="space-y-6">
-                      <div>
-                        <h4 className="text-sm uppercase text-gray-500 mb-1">
-                          Klient
-                        </h4>
-                        <p className="font-medium">{project.client}</p>
-                      </div>
-
-                      <div>
-                        <h4 className="text-sm uppercase text-gray-500 mb-1">
-                          Rola
-                        </h4>
-                        <p className="font-medium">{project.role}</p>
-                      </div>
-
-                      <div>
-                        <h4 className="text-sm uppercase text-gray-500 mb-1">
-                          Czas realizacji
-                        </h4>
-                        <p className="font-medium">{project.timeline}</p>
-                      </div>
-
-                      <div>
-                        <h4 className="text-sm uppercase text-gray-500 mb-2">
-                          Technologie
-                        </h4>
-                        <div className="flex flex-wrap gap-2">
-                          {project.technologies.map((tech, techIndex) => (
-                            <span
-                              // biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
-                              key={techIndex}
-                              className="px-3 py-1 text-xs rounded-full bg-gray-800 text-gray-300 border border-gray-700"
-                            >
-                              {tech}
-                            </span>
-                          ))}
+                      <div className="p-6">
+                        <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+                          <span className="bg-pink-500/20 p-1.5 rounded-md">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-pink-400">
+                              <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                              <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                            </svg>
+                          </span>
+                          Szczegóły projektu
+                        </h2>
+                        <div className="space-y-4">
+                          <div>
+                            <h3 className="text-sm uppercase tracking-wider text-gray-400 mb-1">Klient</h3>
+                            <p className="text-white">{project.client}</p>
+                          </div>
+                          <div>
+                            <h3 className="text-sm uppercase tracking-wider text-gray-400 mb-1">Czas realizacji</h3>
+                            <p className="text-white">{project.timeline}</p>
+                          </div>
+                          <div>
+                            <h3 className="text-sm uppercase tracking-wider text-gray-400 mb-1">Moja rola</h3>
+                            <p className="text-white">{project.role}</p>
+                          </div>
+                          <div>
+                            <h3 className="text-sm uppercase tracking-wider text-gray-400 mb-1">Technologie</h3>
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              {project.technologies.map((tech, index) => (
+                                <span
+                                  key={index}
+                                  className="px-3 py-1 text-xs rounded-full bg-white/5 backdrop-blur-md text-gray-300 border border-white/10 hover:bg-white/10 transition-colors duration-300"
+                                >
+                                  {tech}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
                         </div>
                       </div>
+                    </Card3D>
+                  </div>
+                </div>
+              </AnimatedSection>
 
-                      <div>
-                        <h4 className="text-sm uppercase text-gray-500 mb-2">
-                          Główne funkcjonalności
-                        </h4>
-                        <ul className="list-disc pl-5 text-gray-300 space-y-1 text-sm">
-                          {project.features.map((feature, featureIndex) => (
-                            // biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
-                            <li key={featureIndex}>{feature}</li>
-                          ))}
-                        </ul>
+              {/* Features & Challenge/Solution */}
+              <div className="mt-12 grid md:grid-cols-2 gap-8">
+                {/* Features Section */}
+                <AnimatedSection animation="slideLeft" delay={0.4}>
+                  <div className="relative group">
+                    <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500/30 to-blue-500/20 rounded-2xl blur-lg opacity-75 group-hover:opacity-100 transition-opacity duration-300" />
+                    
+                    <div className="backdrop-blur-xl bg-black/20 border border-white/10 p-6 rounded-2xl relative">
+                      <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                      
+                      <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                        <span className="bg-indigo-500/20 p-1.5 rounded-md">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-400">
+                            <path d="m12 14 4-4" /><path d="M3.34 19a10 10 0 1 1 17.32 0" />
+                          </svg>
+                        </span>
+                        Główne funkcjonalności
+                      </h2>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {project.features.map((feature, index) => (
+                          <div
+                            key={index}
+                            className="bg-white/5 backdrop-blur-md rounded-lg p-4 border border-white/5 hover:bg-white/10 transition-colors duration-300 hover:border-indigo-500/30"
+                          >
+                            <span>{feature}</span>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   </div>
-                </Card3D>
-              </AnimatedSection>
-            </div>
+                </AnimatedSection>
 
-            {/* Code Sample */}
-            <div className="mt-16">
-              <AnimatedSection animation="fadeIn" delay={0.3}>
-                <SectionHeading
-                  title="Przykładowy kod"
-                  subtitle="Fragment kodu z projektu"
-                  alignment="center"
-                  size="lg"
-                  animation="fade"
-                />
-
-                <div className="mt-8">
-                  <CodeBlock
-                    code={project.codeSnippet}
-                    language="typescript"
-                    theme="tech"
-                    showLineNumbers
-                    fileName={`${project.id}.ts`}
-                    animateTyping={false}
-                  />
-                </div>
-              </AnimatedSection>
-            </div>
-
-            {/* Related Projects */}
-            <div className="mt-24">
-              <AnimatedSection animation="fadeIn">
-                <SectionHeading
-                  title="Podobne projekty"
-                  subtitle="Zobacz inne projekty z mojego portfolio"
-                  alignment="center"
-                  size="lg"
-                  animation="fade"
-                />
-
-                <div className="mt-12 grid md:grid-cols-3 gap-8">
-                  {projekty
-                    .filter((p) => p.id !== project.id)
-                    .slice(0, 3)
-                    .map((relatedProject, index) => (
-                      <AnimatedSection
-                        key={relatedProject.id}
-                        animation="slideUp"
-                        delay={0.1 * index}
-                      >
-                        <Link href={`/projekty/${relatedProject.id}`}>
-                          <TiltCard
-                            className="h-full"
-                            tiltAmount={5}
-                            glareOpacity={0.2}
-                            perspective={800}
+                {/* Outcomes Section */}
+                <AnimatedSection animation="slideRight" delay={0.4}>
+                  <div className="relative group">
+                    <div className="absolute -inset-0.5 bg-gradient-to-r from-green-500/20 to-blue-500/30 rounded-2xl blur-lg opacity-75 group-hover:opacity-100 transition-opacity duration-300" />
+                    
+                    <div className="backdrop-blur-xl bg-black/20 border border-white/10 p-6 rounded-2xl relative">
+                      <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                      
+                      <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                        <span className="bg-green-500/20 p-1.5 rounded-md">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-400">
+                            <path d="M12 20v-6M12 14l2.5-2.5M12 14l-2.5-2.5"></path>
+                            <path d="M16 4v6h-8V4"></path>
+                          </svg>
+                        </span>
+                        Rezultaty
+                      </h2>
+                      <div className="space-y-3">
+                        {project.outcomes?.map((outcome, index) => (
+                          <div
+                            key={index}
+                            className="bg-white/5 backdrop-blur-md rounded-lg p-4 border border-white/5 hover:bg-white/10 transition-colors duration-300 hover:border-green-500/30"
                           >
-                            <div className="h-full flex flex-col">
-                              <div className="w-full h-48 overflow-hidden rounded-t-xl">
-                                <Image
-                                  src={relatedProject.image}
-                                  alt={relatedProject.title}
-                                  className="w-full h-full object-cover"
-                                  layout="responsive"
-                                  width={800}
-                                  height={500}
-                                />
-                              </div>
+                            <span>{outcome}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </AnimatedSection>
+              </div>
 
-                              <div className="p-6 flex-grow flex flex-col">
-                                <h3 className="text-xl font-bold mb-2">
-                                  <GradientText
-                                    from={relatedProject.color
-                                      .split(" ")[0]
-                                      .replace("from-", "")}
-                                    to={relatedProject.color
-                                      .split(" ")[1]
-                                      .replace("to-", "")}
-                                  >
-                                    {relatedProject.title}
-                                  </GradientText>
-                                </h3>
+              {/* Challenge and Solution */}
+              <div className="mt-12 grid md:grid-cols-2 gap-8">
+                <AnimatedSection animation="slideLeft" delay={0.5}>
+                  <Card3D
+                    interactive={true}
+                    glowEffect
+                    shadow
+                    bgColor="bg-white/5"
+                    borderColor="border-indigo-500/20"
+                    height="100%"
+                    variant="glass"
+                    glassEffect={{
+                      blur: 16,
+                      opacity: 0.05,
+                      borderWidth: 1, 
+                      borderColor: "rgba(255, 255, 255, 0.1)",
+                      backdropFilter: "blur(16px)"
+                    }}
+                    hoverEffect="glass"
+                  >
+                    <div className="p-6">
+                      <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                        <span className="bg-indigo-500/20 p-1.5 rounded-md">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-400">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
+                          </svg>
+                        </span>
+                        Wyzwanie
+                      </h2>
+                      <p className="text-gray-300 leading-relaxed">{project.challenge}</p>
+                    </div>
+                  </Card3D>
+                </AnimatedSection>
 
-                                <p className="text-gray-400 text-sm mb-4">
-                                  {relatedProject.shortDesc}
-                                </p>
+                <AnimatedSection animation="slideRight" delay={0.5}>
+                  <Card3D
+                    interactive={true}
+                    glowEffect
+                    shadow
+                    bgColor="bg-white/5"
+                    borderColor="border-pink-500/20"
+                    height="100%"
+                    variant="glass"
+                    glassEffect={{
+                      blur: 16,
+                      opacity: 0.05,
+                      borderWidth: 1, 
+                      borderColor: "rgba(255, 255, 255, 0.1)",
+                      backdropFilter: "blur(16px)"
+                    }}
+                    hoverEffect="glass"
+                  >
+                    <div className="p-6">
+                      <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                        <span className="bg-pink-500/20 p-1.5 rounded-md">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-pink-400">
+                            <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
+                          </svg>
+                        </span>
+                        Rozwiązanie
+                      </h2>
+                      <p className="text-gray-300 leading-relaxed">{project.solution}</p>
+                    </div>
+                  </Card3D>
+                </AnimatedSection>
+              </div>
 
-                                <div className="mt-auto">
-                                  <EnhancedButton
-                                    variant="outline"
-                                    size="sm"
-                                    className="w-full"
-                                  >
-                                    Zobacz szczegóły
-                                  </EnhancedButton>
-                                </div>
-                              </div>
-                            </div>
-                          </TiltCard>
-                        </Link>
-                      </AnimatedSection>
-                    ))}
+              {/* Code Section */}
+              <AnimatedSection animation="fadeIn" delay={0.6} className="mt-12">
+                <div className="relative group">
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500/20 via-indigo-500/20 to-blue-500/20 rounded-2xl blur-lg opacity-75 group-hover:opacity-100 transition-opacity duration-300" />
+                  
+                  <div className="relative backdrop-blur-xl bg-black/20 border border-white/10 p-6 rounded-2xl shadow-xl">
+                    <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                      <span className="bg-purple-500/20 p-1.5 rounded-md">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-purple-400">
+                          <polyline points="16 18 22 12 16 6"></polyline>
+                          <polyline points="8 6 2 12 8 18"></polyline>
+                        </svg>
+                      </span>
+                      Fragment kodu
+                    </h2>
+                    <CodeBlock
+                      code={project.codeSnippet}
+                      language="typescript"
+                      theme="tech"
+                      showLineNumbers
+                      fileName={`${project.id}.ts`}
+                    />
+                  </div>
                 </div>
               </AnimatedSection>
             </div>
           </div>
         </section>
 
-        {/* CTA Section */}
-        <section className="py-24 px-6">
-          <div className="max-w-4xl mx-auto text-center">
-            <AnimatedSection animation="fadeIn">
-              <SectionHeading
-                title="Zróbmy coś razem"
-                subtitle="Masz pomysł na projekt? Porozmawiajmy o nim"
-                alignment="center"
-                size="xl"
-                gradient
-                animation="fade"
-              />
+        {/* CTA Section with glass morphism */}
+        <section className="py-24 px-6 relative">
+          <div className="absolute inset-0 bg-gradient-to-r from-indigo-950/30 to-purple-950/30 backdrop-blur-md" />
+          <div className="max-w-4xl mx-auto text-center relative">
+            <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500/20 via-purple-500/20 to-pink-500/20 rounded-2xl blur-xl" />
+            <div className="relative backdrop-blur-md bg-black/40 p-12 rounded-2xl border border-white/10 shadow-2xl">
+              <AnimatedSection animation="fadeIn">
+                <SectionHeading
+                  title="Zainteresowany współpracą?"
+                  subtitle="Skontaktuj się ze mną, by omówić Twój projekt"
+                  alignment="center"
+                  size="xl"
+                  gradient
+                  animation="fade"
+                />
 
-              <div className="mt-10">
-                <Link href="/kontakt">
-                  <EnhancedButton
-                    variant="tech"
-                    size="lg"
-                    magneticEffect
-                    glowOnHover
-                    rippleEffect
-                    animatedBg
-                  >
-                    Skontaktuj się ze mną
-                  </EnhancedButton>
-                </Link>
-              </div>
-            </AnimatedSection>
+                <div className="mt-10 flex flex-wrap gap-4 justify-center">
+                  <Link href="/kontakt">
+                    <EnhancedButton
+                      variant="tech"
+                      size="lg"
+                      magneticEffect
+                      glowOnHover
+                      rippleEffect
+                      animatedBg
+                    >
+                      Skontaktuj się ze mną
+                    </EnhancedButton>
+                  </Link>
+                  
+                  <Link href="/projekty">
+                    <EnhancedButton
+                      variant="outline"
+                      size="lg"
+                      glowOnHover
+                    >
+                      Zobacz więcej projektów
+                    </EnhancedButton>
+                  </Link>
+                </div>
+              </AnimatedSection>
+            </div>
           </div>
         </section>
 
         {/* Footer */}
-        <footer className="py-12 px-6 bg-black border-t border-gray-800">
+        <footer className="py-12 px-6 bg-black/50 backdrop-blur-md border-t border-gray-800/50">
           <div className="max-w-6xl mx-auto">
             <SectionDivider
               variant="tech"
@@ -818,14 +922,23 @@ export default function ProjectDetailsPage() {
             />
 
             <div className="pt-8 text-center text-gray-500 text-sm">
-              <p>
-                &copy; {new Date().getFullYear()} DevOS. Wszelkie prawa
-                zastrzeżone.
-              </p>
+              <p>&copy; {new Date().getFullYear()} DevOS. Wszelkie prawa zastrzeżone.</p>
             </div>
           </div>
         </footer>
       </SmoothScroll>
+      
+      {/* Add global CSS class for grid pattern */}
+      <style jsx global>{`
+        .bg-grid-pattern {
+          background-image: linear-gradient(
+              rgba(99, 102, 241, 0.03) 1px,
+              transparent 1px
+            ),
+            linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+          background-size: 40px 40px;
+        }
+      `}</style>
     </main>
   );
 }

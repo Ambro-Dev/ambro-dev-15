@@ -13,41 +13,17 @@ import {
   CTALoading,
 } from "@/app/loading-states";
 
-// Import for server components and dynamic loading
+// Import for server components and data fetching
 import { cache } from "react";
-import dynamic from "next/dynamic";
-import { SmoothScroll } from "@/components/ambro-ui/smooth-scroll";
-import InfrastructureWrapper from "@/components/layout/infrastructure-wrapper";
 
-// Dynamically import heavyweight components
-const ProjectsSection = dynamic(
-  () => import("@/components/layout/projects-section"),
-  {
-    loading: () => <ProjectsLoading />,
-    ssr: true,
-  }
-);
-
-const TestimonialsSection = dynamic(
-  () => import("@/components/layout/testimonials-section"),
-  {
-    loading: () => <TestimonialsLoading />,
-    ssr: true,
-  }
-);
-
-const CTASection = dynamic(() => import("@/components/layout/cta-section"), {
-  loading: () => <CTALoading />,
-  ssr: true,
-});
-
-const TechStackSection = dynamic(
-  () => import("@/components/layout/tech-stack-section"),
-  {
-    loading: () => <TechStackLoading />,
-    ssr: true,
-  }
-);
+// Import client component wrappers
+import {
+  DynamicProjects,
+  DynamicTestimonials,
+  DynamicTechStack,
+  DynamicCTA,
+  DynamicInfrastructure
+} from "@/components/dynamic-sections";
 
 // Dodatkowe metadane dla strony głównej
 export const metadata = constructMetadata({
@@ -99,7 +75,7 @@ async function ProjectsData() {
       );
     }
 
-    return <ProjectsSection projects={projects} />;
+    return <DynamicProjects projects={projects} />;
   } catch (error) {
     console.error("Error rendering projects:", error);
     return (
@@ -124,7 +100,7 @@ async function TestimonialsData() {
       );
     }
 
-    return <TestimonialsSection testimonials={testimonials} />;
+    return <DynamicTestimonials testimonials={testimonials} />;
   } catch (error) {
     console.error("Error rendering testimonials:", error);
     return (
@@ -176,29 +152,32 @@ export default function Home() {
         }}
       />
       <main className="min-h-screen text-white relative overflow-hidden md:pt-0 pt-28">
-        {/* Smooth Scroll with reduced motion support */}
-        <SmoothScroll>
-          {/* Prerendered Sections (fast loading, critical content) */}
+        <div>
+          {/* Critical initial content - preloaded */}
           <HeroSection />
           <AboutMeSection />
           <ServicesSection />
 
-          {/* Dynamic Sections (lazy loaded) - now using client component wrapper */}
-          <InfrastructureWrapper />
+          {/* Deferred loading of heavy infrastructure section */}
+          <DynamicInfrastructure />
 
-          {/* Server Components with async data fetching */}
+          {/* Progressive loading of sections below the fold */}
           <Suspense fallback={<ProjectsLoading />}>
             <ProjectsData />
           </Suspense>
 
-          <TechStackSection />
+          <Suspense fallback={<TechStackLoading />}>
+            <DynamicTechStack />
+          </Suspense>
 
           <Suspense fallback={<TestimonialsLoading />}>
             <TestimonialsData />
           </Suspense>
 
-          <CTASection />
-        </SmoothScroll>
+          <Suspense fallback={<CTALoading />}>
+            <DynamicCTA />
+          </Suspense>
+        </div>
       </main>
     </>
   );
