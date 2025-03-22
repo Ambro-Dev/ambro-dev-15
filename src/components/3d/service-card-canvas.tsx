@@ -2,7 +2,7 @@
 
 import React, { useRef, memo, useState, useEffect } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Environment, ContactShadows, Float } from "@react-three/drei";
+import { Float } from "@react-three/drei";
 import * as THREE from "three";
 
 // Interface ServiceIconProps
@@ -35,136 +35,74 @@ const ServiceIcon = memo(
     serviceId,
     isHovered,
     color,
-    performance = "medium",
     pauseAnimations = false,
   }: ServiceIconProps) => {
     const meshRef = useRef<THREE.Mesh>(null);
     const materialRef = useRef<THREE.MeshStandardMaterial>(null);
 
-    // Constants instead of states - reduced complexity
-    const rotationSpeed = performance === "high" ? 0.15 : 0.3;
-    const bounceAmount = performance === "high" ? 0.02 : 0.05;
-    const hoverMultiplier = performance === "high" ? 1.5 : 2;
+    // Further reduce animation complexity
+    const rotationSpeed = 0.05; // Much slower rotation
+    const bounceAmount = 0.01; // Less bounce
 
     // Target values for animations
     const [scale, setScale] = useState(1);
-    const [targetRotationY, setTargetRotationY] = useState(0);
     const [emissiveIntensity, setEmissiveIntensity] = useState(0.2);
 
     // Update target values when hover state changes
     useEffect(() => {
       setScale(isHovered ? 1.1 : 1);
-      setTargetRotationY(isHovered ? Math.PI : 0);
-      setEmissiveIntensity(pauseAnimations ? 0.1 : isHovered ? 0.4 : 0.2);
-    }, [isHovered, pauseAnimations]);
+      setEmissiveIntensity(isHovered ? 0.3 : 0.2);
+    }, [isHovered]);
 
     // Convert color name to hex
     const colorHex = getColorHex(color);
 
-    // Optimized continuous animation
+    // Much simpler animation frame
     useFrame((state) => {
-      if (meshRef.current) {
-        // Smooth scale transition
-        meshRef.current.scale.lerp(new THREE.Vector3(scale, scale, scale), 0.1);
+      if (meshRef.current && !pauseAnimations) {
+        // Simple scale
+        meshRef.current.scale.x = scale;
+        meshRef.current.scale.y = scale;
+        meshRef.current.scale.z = scale;
 
-        // Continuous rotation + hover rotation
+        // Simple rotation - just Y axis
         meshRef.current.rotation.y =
           state.clock.getElapsedTime() * rotationSpeed;
 
-        // Additional rotation towards target on hover
-        meshRef.current.rotation.y += THREE.MathUtils.lerp(
-          meshRef.current.userData.currentRotation || 0,
-          targetRotationY,
-          0.1
-        );
-        meshRef.current.userData.currentRotation = THREE.MathUtils.lerp(
-          meshRef.current.userData.currentRotation || 0,
-          targetRotationY,
-          0.1
-        );
-
-        // Less intensive up-down movement
+        // Simplified position
         if (isHovered) {
           meshRef.current.position.y =
-            Math.sin(state.clock.getElapsedTime() * hoverMultiplier) *
-            bounceAmount;
-        } else {
-          // Reset position when not hovered - fewer calculations
-          meshRef.current.position.y =
-            Math.sin(state.clock.getElapsedTime()) * bounceAmount * 0.5;
+            Math.sin(state.clock.getElapsedTime()) * bounceAmount;
         }
 
-        // Update material emissive intensity
+        // Update material emissive intensity directly
         if (materialRef.current) {
-          materialRef.current.emissiveIntensity = THREE.MathUtils.lerp(
-            materialRef.current.emissiveIntensity,
-            emissiveIntensity,
-            0.1
-          );
+          materialRef.current.emissiveIntensity = emissiveIntensity;
         }
       }
     });
 
-    // Geometries with drastically reduced complexity during transitions
+    // Ultra simplified geometries for all cases
     const renderShape = () => {
-      // Ultra-simple geometry during filter change
-      if (pauseAnimations) {
-        switch (serviceId) {
-          case "infrastructure":
-            return <torusKnotGeometry args={[0.8, 0.3, 8, 4]} />;
-          case "servers":
-            return <boxGeometry args={[1.2, 1.2, 1.2]} />;
-          case "monitoring":
-            return <sphereGeometry args={[1, 6, 6]} />;
-          case "security":
-            return <octahedronGeometry args={[1]} />;
-          case "databases":
-            return <cylinderGeometry args={[0.8, 0.8, 1.5, 8]} />;
-          case "deployment":
-            return <dodecahedronGeometry args={[1]} />;
-          case "webapps":
-            return <tetrahedronGeometry args={[1.2]} />;
-          case "architecture":
-            return <icosahedronGeometry args={[1]} />;
-          default:
-            return <sphereGeometry args={[1, 6, 6]} />;
-        }
-      }
-
-      // Higher details when there is no filter change
-      const useHighDetail = performance !== "high";
-
       switch (serviceId) {
         case "infrastructure":
-          return (
-            <torusKnotGeometry
-              args={useHighDetail ? [0.8, 0.3, 128, 32] : [0.8, 0.3, 100, 16]}
-            />
-          );
+          return <torusKnotGeometry args={[0.8, 0.3, 8, 4]} />;
         case "servers":
           return <boxGeometry args={[1.2, 1.2, 1.2]} />;
         case "monitoring":
-          return (
-            <sphereGeometry args={useHighDetail ? [1, 48, 48] : [1, 32, 32]} />
-          );
+          return <sphereGeometry args={[1, 8, 8]} />;
         case "security":
-          return <octahedronGeometry args={useHighDetail ? [1, 2] : [1]} />;
+          return <octahedronGeometry args={[1]} />;
         case "databases":
-          return (
-            <cylinderGeometry
-              args={useHighDetail ? [0.8, 0.8, 1.5, 48] : [0.8, 0.8, 1.5, 32]}
-            />
-          );
+          return <cylinderGeometry args={[0.8, 0.8, 1.5, 8]} />;
         case "deployment":
-          return <dodecahedronGeometry args={useHighDetail ? [1, 1] : [1]} />;
+          return <dodecahedronGeometry args={[1]} />;
         case "webapps":
           return <tetrahedronGeometry args={[1.2]} />;
         case "architecture":
-          return <icosahedronGeometry args={useHighDetail ? [1, 1] : [1]} />;
+          return <icosahedronGeometry args={[1]} />;
         default:
-          return (
-            <sphereGeometry args={useHighDetail ? [1, 48, 48] : [1, 32, 32]} />
-          );
+          return <sphereGeometry args={[1, 8, 8]} />;
       }
     };
 
@@ -174,12 +112,11 @@ const ServiceIcon = memo(
         <meshStandardMaterial
           ref={materialRef}
           color={colorHex}
-          metalness={pauseAnimations ? 0.5 : 0.7}
-          roughness={pauseAnimations ? 0.5 : 0.3}
+          metalness={0.5}
+          roughness={0.5}
           emissive={colorHex}
-          emissiveIntensity={pauseAnimations ? 0.1 : isHovered ? 0.4 : 0.2}
-          // The following parameters are computationally expensive, so we disable them during filter changes
-          flatShading={pauseAnimations}
+          emissiveIntensity={emissiveIntensity}
+          flatShading={true}
         />
       </mesh>
     );
@@ -203,16 +140,11 @@ const ServiceCardCanvas = memo(
     serviceId,
     isHovered,
     color,
-    performance = "medium",
+    performance = "high", // Default to high performance
     pauseAnimations = false,
   }: ServiceCardCanvasProps) => {
-    // Removed delayed rendering that caused problems
-
-    // Canvas parameter optimization based on performance mode
-    const dpr: [number, number] = [1, 2]; // Limiting maximum DPR
-
-    // Environment preset selection based on performance
-    const environmentPreset = performance === "high" ? "apartment" : "city";
+    // Fixed low DPR for better performance
+    const dpr: [number, number] = [1, 1.5];
 
     return (
       <div className="w-full h-full">
@@ -220,9 +152,10 @@ const ServiceCardCanvas = memo(
           camera={{ position: [0, 0, 6], fov: 50 }}
           dpr={dpr}
           style={{ background: "transparent" }}
-          frameloop="always" // Always render - "demand" caused problems
+          frameloop="demand" // Only render when needed
+          gl={{ antialias: false }} // Disable antialiasing for performance
         >
-          <ambientLight intensity={0.5} />
+          <ambientLight intensity={0.7} />
           <spotLight
             position={[10, 10, 10]}
             angle={0.15}
@@ -230,16 +163,12 @@ const ServiceCardCanvas = memo(
             intensity={1}
           />
 
-          {/* Removed pointLight for better performance in high performance mode */}
-          {performance !== "high" && (
-            <pointLight position={[-10, -10, -10]} intensity={0.5} />
-          )}
-
-          {/* Optimized Float with less intensity */}
+          {/* Simplified Float with minimal animation */}
           <Float
-            speed={1.5}
-            rotationIntensity={isHovered ? 0.3 : 0.1}
-            floatIntensity={isHovered ? 0.6 : 0.3}
+            speed={1}
+            rotationIntensity={0.1}
+            floatIntensity={0.2}
+            enabled={!pauseAnimations}
           >
             <ServiceIcon
               serviceId={serviceId}
@@ -249,20 +178,6 @@ const ServiceCardCanvas = memo(
               pauseAnimations={pauseAnimations}
             />
           </Float>
-
-          {/* Shadows only when not in high performance mode */}
-          {performance !== "high" && (
-            <ContactShadows
-              position={[0, -1.5, 0]}
-              opacity={0.3}
-              scale={3.5}
-              blur={2}
-              far={4}
-            />
-          )}
-
-          {/* Simplified environment for high performance mode */}
-          <Environment preset={environmentPreset} />
         </Canvas>
       </div>
     );

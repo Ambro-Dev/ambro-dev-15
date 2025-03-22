@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
     "@heroui/react": "^2.7.5",
     "@next/mdx": "^15.2.3",
     "@react-three/drei": "^10.0.4",

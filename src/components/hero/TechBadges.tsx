@@ -29,15 +29,15 @@ export const TechBadges: React.FC<TechBadgesProps> = ({
   return (
     <motion.div
       variants={prefersReducedMotion ? undefined : itemVariants}
-      className="mt-16 flex flex-wrap justify-center gap-4"
+      className="mt-20 flex flex-wrap justify-center gap-3"
     >
       {TECH_BADGES.map((tech, i) => (
         <motion.div
           key={tech.name}
-          className="flex items-center gap-1.5 text-sm px-4 py-2 rounded-full bg-gray-800/70 text-gray-200 border border-gray-700/70 backdrop-blur-xl hover:bg-gray-700/50 hover:border-indigo-500/30 transition-all duration-300 cursor-pointer group"
+          className="group relative flex items-center gap-2 text-sm px-4 py-2 rounded-full bg-white/[0.02] text-gray-300 border border-white/[0.05] backdrop-blur-xl hover:bg-white/[0.04] hover:border-indigo-500/20 transition-all duration-300 cursor-pointer"
           whileHover={{
-            scale: 1.05,
-            boxShadow: "0 0 15px rgba(99, 102, 241, 0.2)",
+            scale: 1.03,
+            boxShadow: "0 0 20px rgba(99, 102, 241, 0.15)",
           }}
           whileTap={{ scale: 0.98 }}
           style={{
@@ -48,13 +48,17 @@ export const TechBadges: React.FC<TechBadgesProps> = ({
             }s`,
           }}
         >
-          <span role="img" aria-label={tech.name}>
+          {/* Subtle gradient background */}
+          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+          {/* Content */}
+          <span role="img" aria-label={tech.name} className="relative z-10">
             {tech.icon}
           </span>
-          <span>{tech.name}</span>
+          <span className="relative z-10 font-medium">{tech.name}</span>
 
-          {/* Add subtle light reflection */}
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          {/* Refined light reflection */}
+          <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         </motion.div>
       ))}
     </motion.div>

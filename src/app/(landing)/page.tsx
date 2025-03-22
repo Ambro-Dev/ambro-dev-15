@@ -1,37 +1,27 @@
 import { Suspense } from "react";
-import HeroSection from "@/components/layout/hero-section";
-import AboutMeSection from "@/components/layout/about-section";
 import ServicesSection from "@/components/layout/services-section";
-import { getProjects, getTestimonials } from "@/lib/data"; // Funkcje do pobrania danych
+import { getProjects, getTestimonials } from "@/lib/data";
 import { constructMetadata } from "@/lib/metadata";
-
-// Import optimized loading states
+import TestimonialsSection from "@/components/layout/testimonials-section";
 import {
   ProjectsLoading,
   TestimonialsLoading,
-  TechStackLoading,
   CTALoading,
 } from "@/app/loading-states";
-
-// Import for server components and dynamic loading
 import { cache } from "react";
 import dynamic from "next/dynamic";
 import { SmoothScroll } from "@/components/ambro-ui/smooth-scroll";
 import InfrastructureWrapper from "@/components/layout/infrastructure-wrapper";
+import GlobalStylesComponent from "@/components/global-styles-component";
 
-// Dynamically import heavyweight components
+// Directly import HeroSection for immediate loading
+import HeroSection from "@/components/layout/hero-section";
+
+// Dynamically import heavyweight components with optimized loading states
 const ProjectsSection = dynamic(
   () => import("@/components/layout/projects-section"),
   {
     loading: () => <ProjectsLoading />,
-    ssr: true,
-  }
-);
-
-const TestimonialsSection = dynamic(
-  () => import("@/components/layout/testimonials-section"),
-  {
-    loading: () => <TestimonialsLoading />,
     ssr: true,
   }
 );
@@ -41,15 +31,7 @@ const CTASection = dynamic(() => import("@/components/layout/cta-section"), {
   ssr: true,
 });
 
-const TechStackSection = dynamic(
-  () => import("@/components/layout/tech-stack-section"),
-  {
-    loading: () => <TechStackLoading />,
-    ssr: true,
-  }
-);
-
-// Dodatkowe metadane dla strony głównej
+// Metadata configuration
 export const metadata = constructMetadata({
   title: "Ambro-Dev - DevOps, Automatyzacja, Aplikacje Webowe",
   description:
@@ -66,75 +48,50 @@ export const metadata = constructMetadata({
   ],
 });
 
-// Cache the data fetching to improve performance
-const getProjectsData = cache(async () => {
+// Optimized data fetching with parallel loading
+const getData = cache(async () => {
   try {
-    return await getProjects();
+    const [projects, testimonials] = await Promise.all([
+      getProjects(),
+      getTestimonials(),
+    ]);
+    return { projects, testimonials };
   } catch (error) {
-    console.error("Error fetching projects:", error);
-    return [];
+    console.error("Error fetching data:", error);
+    return { projects: [], testimonials: [] };
   }
 });
 
-const getTestimonialsData = cache(async () => {
-  try {
-    return await getTestimonials();
-  } catch (error) {
-    console.error("Error fetching testimonials:", error);
-    return [];
-  }
-});
-
-// Asynchroniczna funkcja do pobrania projektów (Server Component) z optymalizacją cache
+// Server Components for data fetching
 async function ProjectsData() {
-  try {
-    // Pobierz projekty z cache
-    const projects = await getProjectsData();
+  const { projects } = await getData();
 
-    if (!projects || projects.length === 0) {
-      return (
-        <div className="py-16 text-center">
-          Failed to load projects. Please try again later.
-        </div>
-      );
-    }
-
-    return <ProjectsSection projects={projects} />;
-  } catch (error) {
-    console.error("Error rendering projects:", error);
+  if (!projects || projects.length === 0) {
     return (
-      <div className="py-16 text-center">
+      <div className="py-16 text-center text-gray-400">
         Failed to load projects. Please try again later.
       </div>
     );
   }
+
+  return <ProjectsSection projects={projects} />;
 }
 
-// Asynchroniczna funkcja do pobrania opinii (Server Component) z optymalizacją cache
 async function TestimonialsData() {
-  try {
-    // Pobierz opinie z cache
-    const testimonials = await getTestimonialsData();
+  const { testimonials } = await getData();
 
-    if (!testimonials || testimonials.length === 0) {
-      return (
-        <div className="py-16 text-center">
-          Failed to load testimonials. Please try again later.
-        </div>
-      );
-    }
-
-    return <TestimonialsSection testimonials={testimonials} />;
-  } catch (error) {
-    console.error("Error rendering testimonials:", error);
+  if (!testimonials || testimonials.length === 0) {
     return (
-      <div className="py-16 text-center">
+      <div className="py-16 text-center text-gray-400">
         Failed to load testimonials. Please try again later.
       </div>
     );
   }
+
+  return <TestimonialsSection testimonials={testimonials} />;
 }
 
+// Schema generation
 function generateHomeSchema() {
   return {
     "@context": "https://schema.org",
@@ -146,7 +103,7 @@ function generateHomeSchema() {
       "@type": "ProfessionalService",
       name: "Ambro-Dev",
       description:
-        "Kompleksowe usługi DevOps, automatyzacja procesów IT, administracja serwerami, tworzenie aplikacji webowych i optymalizacja infrastruktury.",
+        "Kompleksowe usługi DevOps, automatyzacja procesów IT, administracja serwerami, tworzenie aplikacje webowe i optymalizacja infrastruktury.",
       image: "/logo.webp",
       telephone: "+48123456789",
       email: "kontakt@ambro-dev.pl",
@@ -167,6 +124,9 @@ function generateHomeSchema() {
 }
 
 export default function Home() {
+  // Use a unique key to force rerender on navigation
+  const pageKey = `home-${Date.now()}`;
+
   return (
     <>
       <script
@@ -175,30 +135,55 @@ export default function Home() {
           __html: JSON.stringify(generateHomeSchema()),
         }}
       />
-      <main className="min-h-screen text-white relative overflow-hidden md:pt-0 pt-28">
-        {/* Smooth Scroll with reduced motion support */}
+      <main
+        className="min-h-screen text-white relative overflow-hidden"
+        key={pageKey}
+      >
+        {/* Global background elements for cohesive design */}
+        <div className="fixed inset-0 -z-10 bg-black">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-900/5 via-transparent to-transparent opacity-40" />
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f46e5/10_1px,transparent_1px),linear-gradient(to_bottom,#4f46e5/10_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_110%)] opacity-10" />
+        </div>
+
         <SmoothScroll>
-          {/* Prerendered Sections (fast loading, critical content) */}
+          {/* Critical content - loaded immediately with direct import */}
           <HeroSection />
-          <AboutMeSection />
-          <ServicesSection />
 
-          {/* Dynamic Sections (lazy loaded) - now using client component wrapper */}
-          <InfrastructureWrapper />
+          {/* Main content sections with consistent spacing and styling */}
+          <div>
+            {/* Services Section - subtle gradient from hero to services */}
+            <div className="bg-gradient-to-b from-black via-gray-950 to-black relative overflow-hidden">
+              <ServicesSection />
+            </div>
 
-          {/* Server Components with async data fetching */}
-          <Suspense fallback={<ProjectsLoading />}>
-            <ProjectsData />
-          </Suspense>
+            {/* Infrastructure Section - complementary gradient to services */}
+            <div className="bg-gradient-to-b from-black via-gray-900 to-black relative overflow-hidden">
+              <InfrastructureWrapper />
+            </div>
 
-          <TechStackSection />
+            {/* Projects Section - similar color scheme but different pattern */}
+            <div className="bg-gradient-to-b from-black via-gray-950 to-black relative overflow-hidden">
+              <Suspense fallback={<ProjectsLoading />}>
+                <ProjectsData />
+              </Suspense>
+            </div>
 
-          <Suspense fallback={<TestimonialsLoading />}>
-            <TestimonialsData />
-          </Suspense>
+            {/* Testimonials Section - darker gradient for contrast */}
+            <div className="bg-gradient-to-b from-black via-gray-900/80 to-black relative overflow-hidden">
+              <Suspense fallback={<TestimonialsLoading />}>
+                <TestimonialsData />
+              </Suspense>
+            </div>
 
-          <CTASection />
+            {/* CTA Section - strong black background for emphasis */}
+            <div className="bg-black relative overflow-hidden">
+              <CTASection />
+            </div>
+          </div>
         </SmoothScroll>
+
+        {/* Replace styled-jsx with a client component */}
+        <GlobalStylesComponent />
       </main>
     </>
   );

@@ -2,24 +2,12 @@
 "use client";
 
 import { useState, useCallback, memo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import Link from "next/link";
-import dynamic from "next/dynamic";
 import { TiltCard } from "@/components/ambro-ui/tilt-card";
 import { GradientText } from "@/components/ambro-ui/gradient-text";
 import type { SerializableService } from "@/lib/service-utils";
-
-// Dynamically import the 3D canvas component with no SSR to avoid hydration issues
-// and only load the heavy 3D library when needed
-const ServiceCardCanvas = dynamic(
-  () => import("@/components/3d/service-card-canvas"),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="w-16 h-16 rounded-full bg-gray-800/50 animate-pulse" />
-    ),
-  }
-);
+import ServiceIcon from "./service-icon";
 
 interface ServicesGridProps {
   services: SerializableService[];
@@ -40,21 +28,21 @@ const ServiceCard = memo(
     onHoverStart: () => void;
     onHoverEnd: () => void;
   }) => {
-    // Animation variants for cards
+    // Animation variants for cards - reduced intensity
     const cardVariants = {
-      hidden: { opacity: 0, y: 50 },
+      hidden: { opacity: 0, y: 20 }, // Reduced distance
       visible: {
         opacity: 1,
         y: 0,
         transition: {
-          delay: 0.1 * index,
-          duration: 0.5,
+          delay: 0.05 * index, // Reduced delay between items
+          duration: 0.4, // Faster animation
           ease: [0.43, 0.13, 0.23, 0.96],
         },
       },
       hover: {
-        y: -10,
-        transition: { duration: 0.3, ease: "easeOut" },
+        y: -5, // Reduced hover movement
+        transition: { duration: 0.2, ease: "easeOut" }, // Faster transition
       },
     };
 
@@ -72,6 +60,7 @@ const ServiceCard = memo(
         onHoverEnd={onHoverEnd}
         className="h-full"
         layout
+        layoutId={`service-card-${service.id}`}
       >
         <Link
           href={`/uslugi/${service.id}`}
@@ -79,36 +68,24 @@ const ServiceCard = memo(
           aria-label={`Zobacz usługę: ${service.title}`}
         >
           <TiltCard
-            className="h-full"
-            tiltAmount={10}
-            glareOpacity={0.2}
-            borderGlow
-            borderColor={`rgba(${
-              primaryColor === "indigo"
-                ? "99, 102, 241"
-                : primaryColor === "emerald"
-                ? "16, 185, 129"
-                : primaryColor === "pink"
-                ? "236, 72, 153"
-                : primaryColor === "purple"
-                ? "168, 85, 247"
-                : primaryColor === "blue"
-                ? "37, 99, 235"
-                : "99, 102, 241"
-            }, ${isHovered ? 0.6 : 0.4})`}
-            backgroundEffect="gradient"
+            className="h-full backdrop-blur-sm transition-all duration-300 border border-gray-800/40 hover:border-indigo-500/30 bg-gray-900/30"
+            tiltAmount={3} // Reduced tilt amount
+            glareOpacity={0.03} // Reduced glare effect
+            borderGlow={false}
+            borderColor={`rgba(48, 48, 48, ${isHovered ? 1 : 0.5})`}
+            backgroundEffect="none"
           >
-            <div className="p-6 h-full flex flex-col relative overflow-hidden">
-              {/* 3D Icon element using R3F - conditionally rendered when hovered or visible */}
-              <div className="w-16 h-16 mb-6">
-                <ServiceCardCanvas
+            <div className="p-8 flex flex-col h-full">
+              {/* Service Icon - using our new component */}
+              <div className="h-16 w-16 mb-5">
+                <ServiceIcon
                   serviceId={service.id}
                   isHovered={isHovered}
                   color={primaryColor}
                 />
               </div>
 
-              <h3 className="text-xl font-bold mb-3">
+              <h3 className="text-xl font-light mb-3 tracking-wide">
                 <GradientText
                   preset={
                     service.id.includes("ai") || service.id.includes("ml")
@@ -120,66 +97,56 @@ const ServiceCard = memo(
                       ? "data"
                       : "tech"
                   }
-                  glowEffect
-                  glowPreset="medium"
-                  fontWeight="bold"
-                  pauseOnHover
+                  glowEffect={isHovered}
+                  glowPreset="light"
+                  fontWeight="light"
                 >
                   {service.title}
                 </GradientText>
               </h3>
 
-              <p className="text-gray-400 mb-6">{service.description}</p>
+              <div className="mb-auto">
+                <p className="text-gray-300 font-light leading-relaxed text-base">
+                  {service.description}
+                </p>
+              </div>
 
-              <div className="mt-auto">
-                <h4 className="text-sm uppercase text-gray-500 mb-2">
-                  Technologie
-                </h4>
+              <div className="mt-6 pt-4 border-t border-gray-800/50">
                 <div className="flex flex-wrap gap-2">
                   {service.tags.slice(0, 3).map((tag, tagIndex) => (
                     <span
                       key={`${service.id}-tag-${tagIndex}`}
-                      className="px-3 py-1 text-xs rounded-full bg-gray-800 text-gray-300 border border-gray-700"
+                      className="px-2 py-1 text-xs rounded-md bg-indigo-900/30 text-indigo-300 border border-indigo-700/30"
                     >
                       {tag}
                     </span>
                   ))}
                   {service.tags.length > 3 && (
-                    <span className="px-3 py-1 text-xs rounded-full bg-gray-800 text-gray-300 border border-gray-700">
+                    <span className="px-2 py-1 text-xs rounded-md bg-indigo-900/30 text-indigo-300 border border-indigo-700/30">
                       +{service.tags.length - 3}
                     </span>
                   )}
                 </div>
               </div>
 
-              {/* Animated arrow indicator on hover - using AnimatePresence for better performance */}
-              <AnimatePresence>
-                {isHovered && (
-                  <motion.div
-                    className="absolute bottom-4 right-4 text-indigo-400"
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -10 }}
-                    transition={{ duration: 0.3 }}
+              {/* Subtle arrow indicator - simplified animation */}
+              {isHovered && (
+                <div className="absolute top-6 right-6 text-indigo-400/70">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden="true"
-                    >
-                      <title>Find out more</title>
-                      <path d="M5 12h13M12 5l7 7-7 7" />
-                    </svg>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                    <path d="M7 17l9.2-9.2M17 17V7H7" />
+                  </svg>
+                </div>
+              )}
             </div>
           </TiltCard>
         </Link>
@@ -188,7 +155,7 @@ const ServiceCard = memo(
   }
 );
 
-// Prevent missing display name ESLint warning
+// Add display name for debugging
 ServiceCard.displayName = "ServiceCard";
 
 const ServicesGrid = ({ services }: ServicesGridProps) => {

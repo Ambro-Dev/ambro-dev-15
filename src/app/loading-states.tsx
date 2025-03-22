@@ -104,7 +104,39 @@ export function TechStackLoading() {
 
 // Testimonials section loading state
 export function TestimonialsLoading() {
-  return <SectionLoading title="Opinie klientów" />;
+  return (
+    <div className="w-full py-16 px-4">
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center mb-12">
+          <div className="w-64 h-10 bg-gray-800/50 rounded-lg animate-pulse mx-auto mb-3"></div>
+          <div className="w-96 h-6 bg-gray-800/50 rounded-lg animate-pulse mx-auto"></div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="bg-gray-800/30 rounded-xl border border-gray-700/20 p-6 h-64 animate-pulse flex flex-col"
+            >
+              <div className="w-8 h-8 bg-gray-700/50 rounded-full mb-4"></div>
+              <div className="space-y-2 flex-grow">
+                <div className="w-full h-3 bg-gray-700/50 rounded"></div>
+                <div className="w-5/6 h-3 bg-gray-700/50 rounded"></div>
+                <div className="w-4/6 h-3 bg-gray-700/50 rounded"></div>
+              </div>
+              <div className="flex items-center mt-4">
+                <div className="w-10 h-10 bg-gray-700/50 rounded-full mr-3"></div>
+                <div className="space-y-1">
+                  <div className="w-24 h-3 bg-gray-700/50 rounded"></div>
+                  <div className="w-16 h-2 bg-gray-700/50 rounded"></div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // CTA section loading state

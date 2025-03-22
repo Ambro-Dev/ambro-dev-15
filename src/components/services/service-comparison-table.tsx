@@ -1,27 +1,141 @@
 // src/components/services/service-comparison-table.tsx
 "use client";
 
-import { useState, useRef } from "react";
-import { motion, useInView } from "framer-motion";
-import { Check, X, AlertTriangle, HelpCircle } from "lucide-react";
-import { HoverCard } from "@/components/ambro-ui/hover-card";
-import { Card3D } from "@/components/ambro-ui/card-3d";
-import { GradientText } from "@/components/ambro-ui/gradient-text";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Check, X, Minus, HelpCircle, ChevronRight } from "lucide-react";
 
-interface ComparisonFeature {
+// Custom hover card component for tooltips
+const HoverCard = ({
+  children,
+  hoverContent,
+  position = "top",
+  width = 200,
+  offset = 8,
+  animation = "fade",
+}: {
+  children: React.ReactNode;
+  hoverContent: string;
+  position?: "top" | "bottom" | "left" | "right";
+  width?: number;
+  offset?: number;
+  animation?: "fade" | "scale" | "slide";
+}) => {
+  const [isHovered, setIsHovered] = useState(false);
+
+  const getPositionStyles = () => {
+    switch (position) {
+      case "top":
+        return {
+          bottom: "100%",
+          left: "50%",
+          transform: "translateX(-50%)",
+          marginBottom: offset,
+        };
+      case "bottom":
+        return {
+          top: "100%",
+          left: "50%",
+          transform: "translateX(-50%)",
+          marginTop: offset,
+        };
+      case "left":
+        return {
+          right: "100%",
+          top: "50%",
+          transform: "translateY(-50%)",
+          marginRight: offset,
+        };
+      case "right":
+        return {
+          left: "100%",
+          top: "50%",
+          transform: "translateY(-50%)",
+          marginLeft: offset,
+        };
+      default:
+        return {
+          bottom: "100%",
+          left: "50%",
+          transform: "translateX(-50%)",
+          marginBottom: offset,
+        };
+    }
+  };
+
+  const getAnimationStyles = () => {
+    if (animation === "fade") {
+      return {
+        initial: { opacity: 0 },
+        animate: { opacity: 1 },
+        exit: { opacity: 0 },
+        transition: { duration: 0.15 },
+      };
+    } else if (animation === "scale") {
+      return {
+        initial: { opacity: 0, scale: 0.85 },
+        animate: { opacity: 1, scale: 1 },
+        exit: { opacity: 0, scale: 0.85 },
+        transition: { duration: 0.15 },
+      };
+    } else if (animation === "slide") {
+      const slideDirection =
+        position === "top"
+          ? { y: 10 }
+          : position === "bottom"
+          ? { y: -10 }
+          : position === "left"
+          ? { x: 10 }
+          : { x: -10 };
+      return {
+        initial: { opacity: 0, ...slideDirection },
+        animate: { opacity: 1, x: 0, y: 0 },
+        exit: { opacity: 0, ...slideDirection },
+        transition: { duration: 0.15 },
+      };
+    }
+    return {};
+  };
+
+  return (
+    <div
+      className="relative"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onFocus={() => setIsHovered(true)}
+      onBlur={() => setIsHovered(false)}
+    >
+      {children}
+      <AnimatePresence>
+        {isHovered && hoverContent && (
+          <motion.div
+            className="absolute z-50 bg-gray-900/95 backdrop-blur-sm p-2.5 rounded-lg border border-gray-700 text-sm text-gray-300 shadow-xl"
+            style={{ width, ...getPositionStyles() }}
+            {...getAnimationStyles()}
+          >
+            {hoverContent}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+// Feature comparison interfaces
+interface FeatureComparison {
   name: string;
   description: string;
   myService: {
-    value: "yes" | "no" | "partial";
-    note?: string;
+    value: "yes" | "partial" | "no";
+    note: string;
   };
   traditional: {
-    value: "yes" | "no" | "partial";
-    note?: string;
+    value: "yes" | "partial" | "no";
+    note: string;
   };
   competitor: {
-    value: "yes" | "no" | "partial";
-    note?: string;
+    value: "yes" | "partial" | "no";
+    note: string;
   };
 }
 
@@ -29,7 +143,7 @@ interface ComparisonData {
   title: string;
   competitorLabel: string;
   traditionalLabel: string;
-  features: ComparisonFeature[];
+  features: FeatureComparison[];
 }
 
 // Dane porównawcze dla różnych usług
@@ -905,126 +1019,217 @@ const ServiceComparisonTable: React.FC<{
   primaryColor: string;
 }> = ({ serviceId, primaryColor }) => {
   const [selectedFeature, setSelectedFeature] = useState<string | null>(null);
-  const sectionRef = useRef<HTMLDivElement>(null);
-  const isInView = useInView(sectionRef, { once: true, amount: 0.3 });
+  const [expandedDetails, setExpandedDetails] = useState<boolean>(false);
 
   // Pobierz dane porównawcze dla wskazanej usługi lub użyj domyślnych
-  const comparisonData = servicesComparison[serviceId] || defaultComparison;
+  const comparisonData =
+    servicesComparison[serviceId as keyof typeof servicesComparison] ||
+    defaultComparison;
+
+  // Ensure we have valid features array
+  const features = comparisonData?.features || [];
 
   // Funkcja renderująca wskaźnik wartości (tak, nie, częściowo)
   const renderValueIndicator = (
-    value: "yes" | "no" | "partial",
-    highlight = false
+    value: "yes" | "partial" | "no",
+    isMyService = false
   ) => {
-    switch (value) {
-      case "yes":
-        return (
-          <span
-            className={`flex justify-center items-center ${
-              highlight ? `text-${primaryColor}-400` : "text-green-400"
-            }`}
-          >
-            <Check className="w-5 h-5" />
-          </span>
-        );
-      case "no":
-        return (
-          <span className="flex justify-center items-center text-red-400">
-            <X className="w-5 h-5" />
-          </span>
-        );
-      case "partial":
-        return (
-          <span className="flex justify-center items-center text-yellow-400">
-            <AlertTriangle className="w-5 h-5" />
-          </span>
-        );
-      default:
-        return null;
+    const baseClasses = "flex items-center justify-center p-1";
+
+    if (value === "yes") {
+      return (
+        <div
+          className={`${baseClasses} rounded-full ${
+            isMyService
+              ? `text-${primaryColor}-400 bg-${primaryColor}-900/30`
+              : "text-emerald-400 bg-emerald-900/30"
+          }`}
+        >
+          <Check className="w-5 h-5" />
+        </div>
+      );
+    } else if (value === "partial") {
+      return (
+        <div
+          className={`${baseClasses} rounded-full text-amber-400 bg-amber-900/30`}
+        >
+          <Minus className="w-5 h-5" />
+        </div>
+      );
+    } else {
+      return (
+        <div
+          className={`${baseClasses} rounded-full text-red-400 bg-red-900/30`}
+        >
+          <X className="w-5 h-5" />
+        </div>
+      );
     }
   };
 
-  return (
-    <div ref={sectionRef}>
-      <Card3D
-        interactive={false}
-        glowEffect
-        glowColor={`rgba(${
-          primaryColor === "indigo"
-            ? "99, 102, 241"
-            : primaryColor === "emerald"
-            ? "16, 185, 129"
-            : primaryColor === "sky"
-            ? "14, 165, 233"
-            : primaryColor === "purple"
-            ? "168, 85, 247"
-            : primaryColor === "amber"
-            ? "245, 158, 11"
-            : primaryColor === "pink"
-            ? "236, 72, 153"
-            : "99, 102, 241"
-        }, 0.4)`}
-        shadow
-        bgColor="bg-gray-900/50"
-        borderColor={`border-${primaryColor}-500/30`}
-      >
-        <div className="p-6">
-          <h3 className="text-xl font-bold mb-6">
-            <GradientText from={primaryColor} to={primaryColor}>
-              {comparisonData.title}
-            </GradientText>
-          </h3>
+  // Animation variants
+  const tableVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.05,
+        delayChildren: 0.1,
+      },
+    },
+  };
 
-          {/* Tabela porównawcza */}
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="border-b border-gray-700">
-                  <th className="py-3 px-4 text-left">Funkcja / Cecha</th>
-                  <th className="py-3 px-4 text-center">
-                    <span className={`text-${primaryColor}-400 font-semibold`}>
-                      Moja usługa
-                    </span>
-                  </th>
-                  <th className="py-3 px-4 text-center">
-                    {comparisonData.traditionalLabel}
-                  </th>
-                  <th className="py-3 px-4 text-center">
-                    {comparisonData.competitorLabel}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {comparisonData.features.map((feature, index) => {
-                  const isSelected = selectedFeature === feature.name;
+  const rowVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.4 },
+    },
+  };
+
+  const detailsVariants = {
+    hidden: { opacity: 0, height: 0 },
+    visible: {
+      opacity: 1,
+      height: "auto",
+      transition: { duration: 0.3 },
+    },
+    exit: {
+      opacity: 0,
+      height: 0,
+      transition: { duration: 0.2 },
+    },
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+        <h3 className="text-xl font-semibold text-white mb-2 md:mb-0">
+          {comparisonData?.title || "Porównanie"}
+        </h3>
+
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            <div
+              className={`w-4 h-4 rounded-full bg-${primaryColor}-900/50 flex items-center justify-center`}
+            >
+              <div
+                className={`w-2 h-2 rounded-full bg-${primaryColor}-400`}
+              ></div>
+            </div>
+            <span className="text-sm text-white">Moja usługa</span>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <div className="w-4 h-4 rounded-full bg-gray-800 flex items-center justify-center">
+              <div className="w-2 h-2 rounded-full bg-gray-400"></div>
+            </div>
+            <span className="text-sm text-gray-400">
+              {comparisonData?.traditionalLabel || "Standardowe"}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <div className="w-4 h-4 rounded-full bg-gray-800 flex items-center justify-center">
+              <div className="w-2 h-2 rounded-full bg-gray-400"></div>
+            </div>
+            <span className="text-sm text-gray-400">
+              {comparisonData?.competitorLabel || "Konkurencja"}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-gray-900/30 rounded-xl border border-gray-800/60 backdrop-blur-sm overflow-hidden shadow-lg">
+        <div className="overflow-x-auto">
+          <motion.table
+            className="w-full border-collapse"
+            variants={tableVariants}
+            initial="hidden"
+            animate="visible"
+          >
+            <thead>
+              <tr className="border-b border-gray-800">
+                <th className="py-4 px-4 text-left text-gray-300">
+                  Funkcja / Cecha
+                </th>
+                <th className="py-4 px-4 text-center w-24">
+                  <span className={`text-${primaryColor}-400 font-semibold`}>
+                    Moja usługa
+                  </span>
+                </th>
+                <th className="py-4 px-4 text-center w-24 text-gray-400">
+                  {comparisonData?.traditionalLabel || "Standardowe"}
+                </th>
+                <th className="py-4 px-4 text-center w-24 text-gray-400">
+                  {comparisonData?.competitorLabel || "Konkurencja"}
+                </th>
+              </tr>
+            </thead>
+
+            <tbody className="divide-y divide-gray-800/60">
+              {Array.isArray(features) &&
+                features.map((feature, idx) => {
+                  if (!feature || typeof feature !== "object") return null;
+
+                  const featureName = feature.name || `unnamed-feature-${idx}`;
+                  const isSelected = selectedFeature === featureName;
 
                   return (
                     <motion.tr
-                      key={feature.name}
-                      className={`border-b border-gray-800 hover:bg-gray-800/30 cursor-pointer ${
-                        isSelected ? `bg-${primaryColor}-900/20` : ""
+                      key={featureName}
+                      className={`transition-all duration-200 
+                      ${
+                        isSelected ? `bg-gray-800/20` : "hover:bg-gray-800/10"
                       }`}
                       onClick={() =>
-                        setSelectedFeature(isSelected ? null : feature.name)
+                        setSelectedFeature(isSelected ? null : featureName)
                       }
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={isInView ? { opacity: 1, x: 0 } : {}}
-                      transition={{ delay: index * 0.1, duration: 0.3 }}
+                      variants={rowVariants}
+                      whileHover={{
+                        backgroundColor: "rgba(31, 41, 55, 0.5)",
+                        transition: { duration: 0.2 },
+                      }}
                     >
-                      <td className="py-3 px-4">
-                        <div className="flex flex-col">
-                          <span className="font-medium">{feature.name}</span>
-                          <span className="text-sm text-gray-400">
-                            {feature.description}
-                          </span>
+                      <td className="py-4 px-4">
+                        <div className="flex items-center gap-2 cursor-pointer">
+                          <div
+                            className={`${
+                              isSelected
+                                ? `text-${primaryColor}-400`
+                                : "text-gray-300"
+                            }`}
+                          >
+                            {isSelected ? (
+                              <ChevronRight className="w-4 h-4" />
+                            ) : (
+                              <HelpCircle className="w-4 h-4" />
+                            )}
+                          </div>
+                          <div>
+                            <p
+                              className={`font-medium ${
+                                isSelected
+                                  ? `text-${primaryColor}-300`
+                                  : "text-white"
+                              }`}
+                            >
+                              {featureName}
+                            </p>
+                            <p className="text-xs text-gray-400 mt-0.5">
+                              {feature.description || ""}
+                            </p>
+                          </div>
                         </div>
                       </td>
+
                       <td className="py-3 px-4">
                         <HoverCard
-                          hoverContent={feature.myService.note}
+                          hoverContent={feature.myService?.note || ""}
                           position="top"
                           offset={10}
-                          animation="fade"
+                          animation="scale"
                           width={200}
                         >
                           <div
@@ -1035,150 +1240,236 @@ const ServiceComparisonTable: React.FC<{
                             }`}
                           >
                             {renderValueIndicator(
-                              feature.myService.value,
+                              feature.myService?.value || "partial",
                               true
                             )}
                           </div>
                         </HoverCard>
                       </td>
+
                       <td className="py-3 px-4">
                         <HoverCard
-                          hoverContent={feature.traditional.note}
+                          hoverContent={feature.traditional?.note || ""}
                           position="top"
                           offset={10}
-                          animation="fade"
+                          animation="scale"
                           width={200}
                         >
                           <div className="w-full flex justify-center">
-                            {renderValueIndicator(feature.traditional.value)}
+                            {renderValueIndicator(
+                              feature.traditional?.value || "partial"
+                            )}
                           </div>
                         </HoverCard>
                       </td>
+
                       <td className="py-3 px-4">
                         <HoverCard
-                          hoverContent={feature.competitor.note}
+                          hoverContent={feature.competitor?.note || ""}
                           position="top"
                           offset={10}
-                          animation="fade"
+                          animation="scale"
                           width={200}
                         >
                           <div className="w-full flex justify-center">
-                            {renderValueIndicator(feature.competitor.value)}
+                            {renderValueIndicator(
+                              feature.competitor?.value || "partial"
+                            )}
                           </div>
                         </HoverCard>
                       </td>
                     </motion.tr>
                   );
                 })}
-              </tbody>
-            </table>
-          </div>
+            </tbody>
+          </motion.table>
+        </div>
 
-          {/* Legenda */}
-          <div className="mt-6 flex flex-wrap gap-6 text-sm text-gray-400">
-            <div className="flex items-center gap-2">
-              <Check className={`w-4 h-4 text-${primaryColor}-400`} />
-              <span>W pełni wspierane</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-yellow-400" />
-              <span>Częściowo wspierane</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <X className="w-4 h-4 text-red-400" />
-              <span>Niewspierane</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <HelpCircle className="w-4 h-4 text-gray-500" />
-              <span>Najedź kursorem, aby zobaczyć szczegóły</span>
-            </div>
-          </div>
-
-          {/* Szczegółowe porównanie wybranej funkcji */}
+        <AnimatePresence>
           {selectedFeature && (
             <motion.div
-              className={`mt-6 p-4 bg-${primaryColor}-900/10 border border-${primaryColor}-500/20 rounded-lg`}
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.3 }}
+              className="p-4 border-t border-gray-800/60 bg-gray-900/50"
+              variants={detailsVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              layout
             >
-              <h4 className="font-bold mb-2">
-                {
-                  comparisonData.features.find(
-                    (f) => f.name === selectedFeature
-                  )?.name
-                }
-              </h4>
+              {Array.isArray(features) &&
+                features
+                  .filter(
+                    (f) =>
+                      f && typeof f === "object" && f.name === selectedFeature
+                  )
+                  .map((feature) => {
+                    if (!feature || typeof feature !== "object") return null;
 
-              <div className="grid md:grid-cols-3 gap-4 mt-4">
-                <div
-                  className={`p-3 rounded-lg bg-${primaryColor}-900/20 border border-${primaryColor}-500/20`}
+                    return (
+                      <div
+                        key={feature.name || `detail-${Math.random()}`}
+                        className="grid md:grid-cols-3 gap-4"
+                      >
+                        <div
+                          className={`p-3 rounded-lg bg-${primaryColor}-900/20 border border-${primaryColor}-500/20`}
+                        >
+                          <h4
+                            className={`text-sm font-medium text-${primaryColor}-400 mb-1.5 flex justify-between`}
+                          >
+                            <span>Moja usługa</span>
+                            <span>
+                              {renderValueIndicator(
+                                feature.myService?.value || "partial",
+                                true
+                              )}
+                            </span>
+                          </h4>
+                          <p className="text-sm text-gray-300">
+                            {feature.myService?.note || ""}
+                          </p>
+                        </div>
+
+                        <div className="p-3 rounded-lg bg-gray-800/50 border border-gray-700/20">
+                          <h4 className="text-sm font-medium text-gray-300 mb-1.5 flex justify-between">
+                            <span>
+                              {comparisonData?.traditionalLabel ||
+                                "Standardowe"}
+                            </span>
+                            <span>
+                              {renderValueIndicator(
+                                feature.traditional?.value || "partial"
+                              )}
+                            </span>
+                          </h4>
+                          <p className="text-sm text-gray-400">
+                            {feature.traditional?.note || ""}
+                          </p>
+                        </div>
+
+                        <div className="p-3 rounded-lg bg-gray-800/50 border border-gray-700/20">
+                          <h4 className="text-sm font-medium text-gray-300 mb-1.5 flex justify-between">
+                            <span>
+                              {comparisonData?.competitorLabel || "Konkurencja"}
+                            </span>
+                            <span>
+                              {renderValueIndicator(
+                                feature.competitor?.value || "partial"
+                              )}
+                            </span>
+                          </h4>
+                          <p className="text-sm text-gray-400">
+                            {feature.competitor?.note || ""}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+              <div className="mt-4 flex justify-between items-center">
+                <p className="text-sm text-gray-400">
+                  Porównanie szczegółów dla cechy:{" "}
+                  <span className="font-medium text-white">
+                    {selectedFeature}
+                  </span>
+                </p>
+
+                <motion.button
+                  className={`text-sm text-${primaryColor}-400 flex items-center gap-1 hover:underline`}
+                  onClick={() => setExpandedDetails(!expandedDetails)}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                 >
-                  <div className="flex justify-between items-center mb-2">
-                    <span className={`font-medium text-${primaryColor}-400`}>
-                      Moja usługa
-                    </span>
-                    {renderValueIndicator(
-                      comparisonData.features.find(
-                        (f) => f.name === selectedFeature
-                      )?.myService.value || "partial",
-                      true
-                    )}
-                  </div>
-                  <p className="text-sm text-gray-300">
-                    {
-                      comparisonData.features.find(
-                        (f) => f.name === selectedFeature
-                      )?.myService.note
-                    }
-                  </p>
-                </div>
-
-                <div className="p-3 rounded-lg bg-gray-800/40 border border-gray-700/30">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-medium text-gray-300">
-                      {comparisonData.traditionalLabel}
-                    </span>
-                    {renderValueIndicator(
-                      comparisonData.features.find(
-                        (f) => f.name === selectedFeature
-                      )?.traditional.value || "partial"
-                    )}
-                  </div>
-                  <p className="text-sm text-gray-400">
-                    {
-                      comparisonData.features.find(
-                        (f) => f.name === selectedFeature
-                      )?.traditional.note
-                    }
-                  </p>
-                </div>
-
-                <div className="p-3 rounded-lg bg-gray-800/40 border border-gray-700/30">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-medium text-gray-300">
-                      {comparisonData.competitorLabel}
-                    </span>
-                    {renderValueIndicator(
-                      comparisonData.features.find(
-                        (f) => f.name === selectedFeature
-                      )?.competitor.value || "partial"
-                    )}
-                  </div>
-                  <p className="text-sm text-gray-400">
-                    {
-                      comparisonData.features.find(
-                        (f) => f.name === selectedFeature
-                      )?.competitor.note
-                    }
-                  </p>
-                </div>
+                  {expandedDetails ? "Mniej szczegółów" : "Więcej szczegółów"}
+                  <ChevronRight
+                    className={`w-4 h-4 transition-transform duration-300 ${
+                      expandedDetails ? "rotate-90" : ""
+                    }`}
+                  />
+                </motion.button>
               </div>
+
+              <AnimatePresence>
+                {expandedDetails && (
+                  <motion.div
+                    className="mt-4 border-t border-gray-800/60 pt-4"
+                    variants={detailsVariants}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                  >
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <h5
+                          className={`text-sm font-medium text-${primaryColor}-400 mb-2 flex items-center gap-1.5`}
+                        >
+                          <div
+                            className={`w-1 h-4 bg-${primaryColor}-500 rounded-sm`}
+                          ></div>
+                          Kluczowe różnice
+                        </h5>
+                        <ul className="space-y-2">
+                          {[
+                            "Kompleksowe rozwiązanie vs. częściowe funkcjonalności",
+                            "Podejście zorientowane na wartość biznesową",
+                            "Ciągła optymalizacja i wsparcie",
+                            "Elastyczność i skalowalność rozwiązania",
+                          ].map((point, idx) => (
+                            <li
+                              key={idx}
+                              className="text-sm flex items-start gap-2"
+                            >
+                              <span
+                                className={`w-4 h-4 rounded-full bg-${primaryColor}-900/30 flex items-center justify-center flex-shrink-0 mt-0.5`}
+                              >
+                                <span
+                                  className={`w-1.5 h-1.5 rounded-full bg-${primaryColor}-400`}
+                                ></span>
+                              </span>
+                              <span className="text-gray-300">{point}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      <div>
+                        <h5
+                          className={`text-sm font-medium text-${primaryColor}-400 mb-2 flex items-center gap-1.5`}
+                        >
+                          <div
+                            className={`w-1 h-4 bg-${primaryColor}-500 rounded-sm`}
+                          ></div>
+                          Dlaczego to ważne
+                        </h5>
+                        <ul className="space-y-2">
+                          {[
+                            "Lepsza wydajność i niezawodność rozwiązania",
+                            "Niższy całkowity koszt posiadania (TCO)",
+                            "Szybsze osiąganie celów biznesowych",
+                            "Większa elastyczność na zmieniające się potrzeby",
+                          ].map((point, idx) => (
+                            <li
+                              key={idx}
+                              className="text-sm flex items-start gap-2"
+                            >
+                              <span
+                                className={`w-4 h-4 rounded-full bg-${primaryColor}-900/30 flex items-center justify-center flex-shrink-0 mt-0.5`}
+                              >
+                                <span
+                                  className={`w-1.5 h-1.5 rounded-full bg-${primaryColor}-400`}
+                                ></span>
+                              </span>
+                              <span className="text-gray-300">{point}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
           )}
-        </div>
-      </Card3D>
+        </AnimatePresence>
+      </div>
     </div>
   );
 };

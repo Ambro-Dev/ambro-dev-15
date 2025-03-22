@@ -2,8 +2,8 @@
 // src/components/services/service-benefits-chart.tsx
 "use client";
 
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   BarChart,
   Bar,
@@ -11,13 +11,13 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
   RadarChart,
   PolarGrid,
   PolarAngleAxis,
   PolarRadiusAxis,
   Radar,
+  Cell,
 } from "recharts";
 import {
   Zap,
@@ -28,9 +28,12 @@ import {
   LineChart,
   LayoutGrid,
   type LucideIcon,
+  BarChart3,
+  RadarIcon,
+  ChevronRight,
 } from "lucide-react";
-import { Card3D } from "@/components/ambro-ui/card-3d";
 import { TiltCard } from "@/components/ambro-ui/tilt-card";
+import ServiceIcon from "@/components/services/service-icon";
 
 interface BenefitData {
   name: string;
@@ -350,7 +353,42 @@ const serviceBenefits: { [key: string]: BenefitData[] } = {
 // Domyślne korzyści do użycia, jeśli nie znajdzie usługi
 const defaultBenefits = serviceBenefits.infrastructure;
 
-// Główny komponent wykresu korzyści
+// Custom tooltip component
+const CustomTooltip = ({ active, payload, primaryColor }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div
+        className={`p-3 bg-gray-900/90 border border-${primaryColor}-500/30 rounded-lg shadow-lg backdrop-blur-sm max-w-xs`}
+      >
+        <p className="text-white font-medium mb-1">{payload[0].payload.name}</p>
+        <p className={`text-${primaryColor}-400 text-sm`}>
+          Ocena: <span className="font-mono">{payload[0].value}</span>/100
+        </p>
+        <p className="text-gray-400 text-xs mt-2">
+          {payload[0].payload.description}
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
+
+// Color conversion function
+const getColorHex = (color: string): string => {
+  const colorMap: { [key: string]: string } = {
+    indigo: "6366f1",
+    blue: "3b82f6",
+    emerald: "10b981",
+    sky: "0ea5e9",
+    purple: "a855f7",
+    amber: "f59e0b",
+    pink: "ec4899",
+  };
+
+  return colorMap[color] || "6366f1";
+};
+
+// Main component
 const ServiceBenefitsChart: React.FC<{
   serviceId: string;
   primaryColor: string;
@@ -358,231 +396,217 @@ const ServiceBenefitsChart: React.FC<{
 }> = ({ serviceId, primaryColor, secondaryColor = primaryColor }) => {
   const [chartType, setChartType] = useState<"bar" | "radar">("radar");
   const [selectedBenefit, setSelectedBenefit] = useState<string | null>(null);
+  const [benefits, setBenefits] = useState<BenefitData[]>([]);
+  const [chartLoaded, setChartLoaded] = useState(false);
 
-  // Pobierz dane korzyści dla wskazanej usługi lub użyj domyślnych
-  const benefits = serviceBenefits[serviceId] || defaultBenefits;
+  useEffect(() => {
+    // Get data for the specified service or use default
+    const serviceData = serviceBenefits[serviceId] || defaultBenefits;
+    setBenefits(Array.isArray(serviceData) ? serviceData : []);
 
-  // Konwersja koloru na format hex dla Recharts
-  const getColorHex = (color: string): string => {
-    const colorMap: { [key: string]: string } = {
-      indigo: "#6366f1",
-      blue: "#3b82f6",
-      emerald: "#10b981",
-      sky: "#0ea5e9",
-      purple: "#a855f7",
-      amber: "#f59e0b",
-      pink: "#ec4899",
-    };
+    // Set the first benefit as selected on initial load
+    if (
+      !selectedBenefit &&
+      Array.isArray(serviceData) &&
+      serviceData.length > 0 &&
+      serviceData[0]?.name
+    ) {
+      setSelectedBenefit(serviceData[0].name);
+    }
 
-    return colorMap[color] || "#6366f1";
+    // Reset chart animation status
+    setChartLoaded(false);
+    setTimeout(() => setChartLoaded(true), 100);
+  }, [serviceId, selectedBenefit]);
+
+  // Get hex color for charts
+  const primaryColorHex = `#${getColorHex(primaryColor)}`;
+  const secondaryColorHex = `#${getColorHex(secondaryColor)}`;
+
+  // Sort benefits by value
+  const sortedBenefits = Array.isArray(benefits)
+    ? [...benefits].sort((a, b) => b.value - a.value)
+    : [];
+
+  // Fix the selectedBenefitDetails with safe access
+  const selectedBenefitDetails = Array.isArray(benefits)
+    ? benefits.find((b) => b && b.name === selectedBenefit) || null
+    : null;
+
+  // Chart event handlers with safety checks
+  const handleChartClick = (data: any) => {
+    if (data && typeof data === "object" && data.name) {
+      setSelectedBenefit(data.name);
+    }
   };
 
-  const primaryColorHex = getColorHex(primaryColor);
+  // Animations
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.2,
+      },
+    },
+  };
 
-  // Sortuj korzyści według wartości (od największej)
-  const sortedBenefits = [...benefits].sort((a, b) => b.value - a.value);
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: { type: "spring", stiffness: 300, damping: 24 },
+    },
+  };
 
-  // Znajdź szczegóły wybranej korzyści
-  const selectedBenefitDetails = benefits.find(
-    (b) => b.name === selectedBenefit
-  );
+  const detailsVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        type: "spring",
+        stiffness: 500,
+        damping: 28,
+        delay: 0.2,
+      },
+    },
+    exit: {
+      opacity: 0,
+      y: -20,
+      transition: { duration: 0.2 },
+    },
+  };
+
+  // Create unique identifiers for animation elements based on selected benefit
+  const uniqueKey = selectedBenefit
+    ? `benefit-${selectedBenefit.replace(/\s+/g, "-").toLowerCase()}`
+    : "no-selection";
 
   return (
-    <div className="flex flex-col">
-      {/* Przyciski przełączania typów wykresów */}
-      <div className="flex justify-end mb-6 gap-2">
-        <button
-          type="button"
-          className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 ${
-            chartType === "bar"
-              ? `bg-${primaryColor}-900/40 text-${primaryColor}-400 border border-${primaryColor}-500/30`
-              : "bg-gray-800/50 text-gray-400 border border-gray-700/30 hover:bg-gray-800"
-          }`}
-          onClick={() => setChartType("bar")}
-        >
-          <BarChart className="w-4 h-4" />
-          <span>Słupkowy</span>
-        </button>
-        <button
-          type="button"
-          className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 ${
-            chartType === "radar"
-              ? `bg-${primaryColor}-900/40 text-${primaryColor}-400 border border-${primaryColor}-500/30`
-              : "bg-gray-800/50 text-gray-400 border border-gray-700/30 hover:bg-gray-800"
-          }`}
-          onClick={() => setChartType("radar")}
-        >
-          <RadarChart className="w-4 h-4" />
-          <span>Radarowy</span>
-        </button>
-      </div>
+    <motion.div
+      className="space-y-4"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
+      {/* Chart Controls */}
+      <motion.div
+        className="flex justify-between items-center mb-6"
+        variants={itemVariants}
+      >
+        <h3 className="text-xl font-semibold text-white">Mierzalne korzyści</h3>
 
-      <div className="grid md:grid-cols-3 gap-8">
-        {/* Wykres */}
-        <div className="md:col-span-2">
-          <Card3D
-            interactive={false}
-            glowEffect
-            glowColor={`rgba(${
-              primaryColor === "indigo"
-                ? "99, 102, 241"
-                : primaryColor === "emerald"
-                ? "16, 185, 129"
-                : primaryColor === "sky"
-                ? "14, 165, 233"
-                : primaryColor === "purple"
-                ? "168, 85, 247"
-                : primaryColor === "amber"
-                ? "245, 158, 11"
-                : primaryColor === "pink"
-                ? "236, 72, 153"
-                : "99, 102, 241"
-            }, 0.4)`}
-            shadow
-            bgColor="bg-gray-900/50"
-            borderColor={`border-${primaryColor}-500/30`}
+        <div
+          className={`bg-gray-800/60 p-1 rounded-lg flex space-x-1 border border-gray-800`}
+        >
+          <button
+            className={`flex items-center justify-center p-2 rounded text-sm font-medium transition-all duration-300
+              ${
+                chartType === "radar"
+                  ? `bg-${primaryColor}-900/70 text-${primaryColor}-300`
+                  : "text-gray-400 hover:text-white"
+              }`}
+            onClick={() => setChartType("radar")}
+            aria-label="Przełącz na wykres radarowy"
           >
-            <div className="p-4 h-[400px]">
-              <ResponsiveContainer width="100%" height="100%">
-                {chartType === "bar" ? (
-                  <BarChart
-                    data={sortedBenefits}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                    layout="vertical"
-                    barGap={5}
-                    barSize={24}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                    <XAxis
-                      type="number"
-                      domain={[0, 100]}
-                      tick={{ fill: "#9CA3AF" }}
-                    />
-                    <YAxis
-                      dataKey="name"
-                      type="category"
-                      tick={{ fill: "#9CA3AF" }}
-                      width={100}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "#1F2937",
-                        border: `1px solid ${primaryColorHex}80`,
-                        borderRadius: "0.375rem",
-                        color: "#F9FAFB",
-                      }}
-                    />
-                    <Legend />
-                    <Bar
-                      dataKey="value"
-                      name="Ocena (0-100)"
-                      fill={primaryColorHex}
-                      onClick={(data) => setSelectedBenefit(data.name)}
-                      isAnimationActive={true}
-                      animationDuration={1000}
-                      animationEasing="ease-out"
-                    />
-                  </BarChart>
-                ) : (
-                  <RadarChart
-                    cx="50%"
-                    cy="50%"
-                    outerRadius="70%"
-                    data={benefits}
-                  >
-                    <PolarGrid stroke="#374151" />
-                    <PolarAngleAxis dataKey="name" tick={{ fill: "#9CA3AF" }} />
-                    <PolarRadiusAxis
-                      angle={30}
-                      domain={[0, 100]}
-                      tick={{ fill: "#9CA3AF" }}
-                    />
-                    <Radar
-                      name="Ocena (0-100)"
-                      dataKey="value"
-                      stroke={primaryColorHex}
-                      fill={primaryColorHex}
-                      fillOpacity={0.5}
-                      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-                      onClick={(data: any) => {
-                        if (data?.name) {
-                          setSelectedBenefit(data.name);
-                        }
-                      }}
-                      isAnimationActive={true}
-                      animationDuration={1000}
-                      animationEasing="ease-out"
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "#1F2937",
-                        border: `1px solid ${primaryColorHex}80`,
-                        borderRadius: "0.375rem",
-                        color: "#F9FAFB",
-                      }}
-                    />
-                    <Legend />
-                  </RadarChart>
-                )}
-              </ResponsiveContainer>
-            </div>
-          </Card3D>
+            <RadarIcon size={16} className="mr-1" />
+            <span className="hidden sm:inline">Radar</span>
+          </button>
+          <button
+            className={`flex items-center justify-center p-2 rounded text-sm font-medium transition-all duration-300
+              ${
+                chartType === "bar"
+                  ? `bg-${primaryColor}-900/70 text-${primaryColor}-300`
+                  : "text-gray-400 hover:text-white"
+              }`}
+            onClick={() => setChartType("bar")}
+            aria-label="Przełącz na wykres słupkowy"
+          >
+            <BarChart3 size={16} className="mr-1" />
+            <span className="hidden sm:inline">Bar</span>
+          </button>
         </div>
+      </motion.div>
 
-        {/* Lista korzyści z opisami */}
-        <div className="md:col-span-1">
-          <div className="space-y-4">
-            {benefits.map((benefit) => (
-              <motion.div key={benefit.name} whileHover={{ scale: 1.02 }}>
+      {/* Main Content */}
+      <div className="grid md:grid-cols-5 gap-6">
+        {/* Benefits List - Sidebar */}
+        <motion.div className="md:col-span-2" variants={itemVariants}>
+          <div
+            className={`space-y-3 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-${primaryColor}-900 scrollbar-track-gray-800/30`}
+          >
+            {sortedBenefits.map((benefit) => (
+              <motion.div
+                key={benefit.name}
+                whileHover={{ scale: 1.02, x: 5 }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                className="transform-gpu"
+              >
                 <TiltCard
-                  tiltAmount={5}
-                  glareOpacity={0.1}
-                  className={`cursor-pointer transition-all duration-200 ${
-                    selectedBenefit === benefit.name
-                      ? `border-l-4 border-${primaryColor}-500`
-                      : ""
-                  }`}
+                  tiltAmount={3}
+                  glareOpacity={0.05}
+                  className={`cursor-pointer transition-all duration-300 bg-gray-900/40 hover:bg-gray-900/60 
+                    ${
+                      selectedBenefit === benefit.name
+                        ? `ring-1 ring-${primaryColor}-500 shadow-lg shadow-${primaryColor}-900/10`
+                        : "ring-1 ring-gray-800/80"
+                    }`}
                   onClick={() => setSelectedBenefit(benefit.name)}
+                  scale={1.02}
                 >
-                  <div className="p-4">
-                    <div className="flex items-center gap-3 mb-2">
+                  <div className="p-3">
+                    <div className="flex items-center gap-3">
                       <div
-                        className={`p-2 rounded-md bg-${primaryColor}-900/30 text-${primaryColor}-400`}
+                        className={`p-2 rounded-md ${
+                          selectedBenefit === benefit.name
+                            ? `bg-${primaryColor}-900/70 text-${primaryColor}-300`
+                            : "bg-gray-800/80 text-gray-400"
+                        }`}
                       >
                         <benefit.icon size={16} />
                       </div>
-                      <h3
-                        className={`font-semibold ${
-                          selectedBenefit === benefit.name
-                            ? `text-${primaryColor}-400`
-                            : "text-white"
-                        }`}
-                      >
-                        {benefit.name}
-                      </h3>
-                    </div>
-                    <div className="ml-9">
-                      <p className="text-sm text-gray-400">
-                        {benefit.description}
-                      </p>
-                      {selectedBenefit === benefit.name && (
-                        <div className="mt-2">
-                          <div className="h-1.5 w-full bg-gray-700 rounded-full overflow-hidden">
-                            <motion.div
-                              className={`h-full bg-${primaryColor}-500 rounded-full`}
-                              initial={{ width: 0 }}
-                              animate={{ width: `${benefit.value}%` }}
-                              transition={{ duration: 0.8, ease: "easeOut" }}
+                      <div className="flex-1">
+                        <h3
+                          className={`font-medium ${
+                            selectedBenefit === benefit.name
+                              ? `text-${primaryColor}-300`
+                              : "text-white"
+                          }`}
+                        >
+                          {benefit.name}
+                        </h3>
+                        <div className="flex items-center mt-1">
+                          <div className="flex-1 h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full bg-${primaryColor}-${
+                                selectedBenefit === benefit.name
+                                  ? "500"
+                                  : "700/50"
+                              } rounded-full`}
+                              style={{ width: `${benefit.value}%` }}
                             />
                           </div>
-                          <div className="flex justify-end mt-1">
-                            <span
-                              className={`text-xs font-medium text-${primaryColor}-400`}
-                            >
-                              {benefit.value}/100
-                            </span>
-                          </div>
+                          <span
+                            className={`ml-2 text-xs ${
+                              selectedBenefit === benefit.name
+                                ? `text-${primaryColor}-400`
+                                : "text-gray-500"
+                            }`}
+                          >
+                            {benefit.value}
+                          </span>
                         </div>
+                      </div>
+
+                      {selectedBenefit === benefit.name && (
+                        <ChevronRight
+                          size={16}
+                          className={`text-${primaryColor}-400`}
+                        />
                       )}
                     </div>
                   </div>
@@ -590,109 +614,231 @@ const ServiceBenefitsChart: React.FC<{
               </motion.div>
             ))}
           </div>
-        </div>
+        </motion.div>
+
+        {/* Chart Area */}
+        <motion.div
+          className="md:col-span-3 bg-gray-900/30 rounded-xl border border-gray-800/50 backdrop-blur-sm"
+          variants={itemVariants}
+        >
+          {chartLoaded && (
+            <AnimatePresence mode="wait">
+              <motion.div
+                className="p-4 h-[400px] relative"
+                key={`chart-${chartType}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <ResponsiveContainer width="100%" height="100%">
+                  {chartType === "bar" ? (
+                    <BarChart
+                      data={sortedBenefits}
+                      margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
+                      layout="vertical"
+                      barSize={20}
+                      onClick={handleChartClick}
+                    >
+                      <defs>
+                        <linearGradient
+                          id="barGradient"
+                          x1="0"
+                          y1="0"
+                          x2="1"
+                          y2="0"
+                        >
+                          <stop
+                            offset="0%"
+                            stopColor={primaryColorHex}
+                            stopOpacity={0.8}
+                          />
+                          <stop
+                            offset="100%"
+                            stopColor={secondaryColorHex}
+                            stopOpacity={0.8}
+                          />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="#374151"
+                        horizontal={true}
+                        vertical={false}
+                      />
+                      <XAxis
+                        type="number"
+                        domain={[0, 100]}
+                        tick={{ fill: "#9CA3AF" }}
+                        axisLine={{ stroke: "#4B5563" }}
+                        tickLine={{ stroke: "#4B5563" }}
+                      />
+                      <YAxis
+                        dataKey="name"
+                        type="category"
+                        tick={{ fill: "#D1D5DB" }}
+                        width={120}
+                        axisLine={{ stroke: "#4B5563" }}
+                        tickLine={{ stroke: "#4B5563" }}
+                      />
+                      <Tooltip
+                        content={<CustomTooltip primaryColor={primaryColor} />}
+                        cursor={{ fill: "rgba(107, 114, 128, 0.15)" }}
+                      />
+                      <Bar
+                        dataKey="value"
+                        name="Ocena"
+                        fill="url(#barGradient)"
+                        onClick={(data) => setSelectedBenefit(data.name)}
+                        isAnimationActive={true}
+                        animationDuration={1000}
+                        animationEasing="ease-out"
+                        radius={[0, 4, 4, 0]}
+                      >
+                        {sortedBenefits.map((entry, index) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={
+                              entry.name === selectedBenefit
+                                ? primaryColorHex
+                                : `url(#barGradient)`
+                            }
+                            cursor="pointer"
+                            stroke={
+                              entry.name === selectedBenefit
+                                ? primaryColorHex
+                                : "none"
+                            }
+                            strokeWidth={entry.name === selectedBenefit ? 1 : 0}
+                          />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  ) : (
+                    <RadarChart
+                      cx="50%"
+                      cy="50%"
+                      outerRadius="70%"
+                      data={benefits}
+                      onClick={handleChartClick}
+                    >
+                      <defs>
+                        <linearGradient
+                          id="radarGradient"
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
+                          <stop
+                            offset="0%"
+                            stopColor={primaryColorHex}
+                            stopOpacity={0.8}
+                          />
+                          <stop
+                            offset="100%"
+                            stopColor={secondaryColorHex}
+                            stopOpacity={0.3}
+                          />
+                        </linearGradient>
+                      </defs>
+                      <PolarGrid stroke="#374151" />
+                      <PolarAngleAxis
+                        dataKey="name"
+                        tick={{ fill: "#D1D5DB", fontSize: 12 }}
+                      />
+                      <PolarRadiusAxis
+                        angle={90}
+                        domain={[0, 100]}
+                        tick={{ fill: "#9CA3AF" }}
+                        stroke="#4B5563"
+                      />
+                      <Radar
+                        name="Korzyść"
+                        dataKey="value"
+                        stroke={primaryColorHex}
+                        fill="url(#radarGradient)"
+                        fillOpacity={0.6}
+                        activeDot={{
+                          onClick: handleChartClick,
+                          r: 8,
+                          stroke: primaryColorHex,
+                          strokeWidth: 2,
+                          fill: "#fff",
+                        }}
+                        isAnimationActive={chartLoaded}
+                        animationDuration={1200}
+                        animationEasing="ease-out"
+                      />
+                      <Tooltip
+                        content={<CustomTooltip primaryColor={primaryColor} />}
+                      />
+                    </RadarChart>
+                  )}
+                </ResponsiveContainer>
+              </motion.div>
+            </AnimatePresence>
+          )}
+        </motion.div>
       </div>
 
-      {/* Szczegóły wybranej korzyści */}
-      {selectedBenefitDetails && (
-        <motion.div
-          className={`mt-8 p-6 bg-${primaryColor}-900/10 border border-${primaryColor}-500/20 rounded-lg`}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          key={selectedBenefitDetails.name}
-        >
-          <div className="flex items-center gap-4">
-            <div
-              className={`p-3 rounded-full bg-${primaryColor}-900/30 text-${primaryColor}-400`}
+      {/* Selected Benefit Details */}
+      <AnimatePresence mode="wait">
+        {selectedBenefitDetails &&
+          typeof selectedBenefitDetails === "object" && (
+            <motion.div
+              className={`mt-8 p-6 rounded-xl border border-${primaryColor}-500/20 
+              bg-gradient-to-br from-gray-900 to-gray-900/80 backdrop-blur-sm shadow-lg`}
+              variants={detailsVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              key={`details-${uniqueKey}`}
             >
-              <selectedBenefitDetails.icon size={24} />
-            </div>
-            <div>
-              <h3 className="text-xl font-bold">
-                {selectedBenefitDetails.name}
-              </h3>
-              <p className="text-gray-300">
-                {selectedBenefitDetails.description}
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-4 grid md:grid-cols-2 gap-4">
-            <div>
-              <h4 className="text-sm uppercase text-gray-500 mb-2">
-                Jak to osiągamy
-              </h4>
-              <ul className="space-y-2">
-                {[
-                  "Wykorzystanie najnowszych technologii i narzędzi",
-                  "Wieloletnie doświadczenie specjalistów",
-                  "Indywidualne podejście do każdego projektu",
-                  "Ciągłe monitorowanie i optymalizacja",
-                ].map((point, idx) => (
-                  <li
-                    key={`point-${
-                      // biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
-                      idx
-                    }`}
-                    className="flex items-start gap-2"
-                  >
-                    <span className={`text-${primaryColor}-400 mt-1`}>→</span>
-                    <span className="text-gray-300 text-sm">{point}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="text-sm uppercase text-gray-500 mb-2">
-                Rezultaty dla Twojego biznesu
-              </h4>
-              <div className="bg-gray-800/50 p-4 rounded-lg">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm text-gray-300">
-                    Wartość dla biznesu
-                  </span>
-                  <span className={`text-${primaryColor}-400 font-semibold`}>
-                    {selectedBenefitDetails.value}/100
-                  </span>
-                </div>
-                <div className="h-2 w-full bg-gray-700 rounded-full overflow-hidden">
+              <div className="flex items-center gap-5">
+                <div
+                  className={`p-4 rounded-full bg-${primaryColor}-900/30 text-${primaryColor}-400 
+              shadow-inner shadow-${primaryColor}-500/10 border border-${primaryColor}-500/20`}
+                >
                   <motion.div
-                    className={`h-full bg-gradient-to-r from-${primaryColor}-600 to-${secondaryColor}-500 rounded-full`}
-                    initial={{ width: 0 }}
-                    animate={{ width: `${selectedBenefitDetails.value}%` }}
-                    transition={{ duration: 1, ease: "easeOut" }}
-                  />
+                    animate={{ rotate: [0, 5, -5, 0] }}
+                    transition={{
+                      duration: 0.6,
+                      ease: "easeInOut",
+                      repeat: 0,
+                      repeatType: "mirror",
+                    }}
+                  >
+                    <ServiceIcon
+                      serviceId="performance"
+                      size={8}
+                      color={primaryColor}
+                      animate
+                    />
+                  </motion.div>
                 </div>
-
-                <div className="mt-4 text-sm text-gray-400">
-                  <p>
-                    {selectedBenefitDetails.name === "Skalowalność"
-                      ? "Rozwiązanie dostosowuje się do zmieniających się potrzeb biznesowych, umożliwiając szybki wzrost bez konieczności przebudowy infrastruktury."
-                      : selectedBenefitDetails.name === "Niezawodność"
-                      ? "Minimalizacja przestojów i przerw w działaniu dzięki architekturze wysokiej dostępności i mechanizmom automatycznego przywracania."
-                      : selectedBenefitDetails.name === "Oszczędność kosztów"
-                      ? "Optymalizacja wykorzystania zasobów i redukcja kosztów operacyjnych dzięki automatyzacji i zarządzaniu zasobami."
-                      : selectedBenefitDetails.name === "Bezpieczeństwo"
-                      ? "Kompleksowa ochrona danych i systemów przed zagrożeniami zewnętrznymi i wewnętrznymi, zgodność z najlepszymi praktykami."
-                      : selectedBenefitDetails.name === "Szybkość wdrożenia"
-                      ? "Znaczące skrócenie czasu potrzebnego na wdrożenie nowych funkcji i usług, przyspieszając time-to-market."
-                      : selectedBenefitDetails.name === "Automatyzacja"
-                      ? "Redukcja ręcznej pracy i błędów ludzkich dzięki automatyzacji powtarzalnych zadań i procesów."
-                      : selectedBenefitDetails.name === "UX/UI"
-                      ? "Intuicyjny i atrakcyjny interfejs użytkownika zwiększający zaangażowanie i satysfakcję klientów."
-                      : selectedBenefitDetails.name === "Wydajność"
-                      ? "Optymalizacja szybkości działania i responsywności, prowadząca do lepszych doświadczeń użytkownika i wyższych konwersji."
-                      : "Znacząca poprawa wyników biznesowych dzięki profesjonalnemu wdrożeniu i optymalizacji rozwiązania."}
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <h3
+                      className={`text-xl font-bold text-${primaryColor}-300`}
+                    >
+                      {selectedBenefitDetails.name || ""}
+                    </h3>
+                    <span
+                      className={`text-${primaryColor}-400 font-mono bg-${primaryColor}-900/20 px-2 py-1 rounded text-sm`}
+                    >
+                      {selectedBenefitDetails.value || 0}/100
+                    </span>
+                  </div>
+                  <p className="text-gray-300 mt-2">
+                    {selectedBenefitDetails.description || ""}
                   </p>
                 </div>
               </div>
-            </div>
-          </div>
-        </motion.div>
-      )}
-    </div>
+            </motion.div>
+          )}
+      </AnimatePresence>
+    </motion.div>
   );
 };
 

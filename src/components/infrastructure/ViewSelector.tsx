@@ -21,17 +21,18 @@ export const ViewSelector: React.FC<ViewSelectorProps> = ({
 
   return (
     <div className="flex justify-center">
-      <div className="bg-gray-900/30 backdrop-blur-md p-1.5 rounded-full inline-flex flex-wrap justify-center border border-white/10 shadow-[0_4px_20px_0_rgba(0,0,0,0.1)]">
+      <div className="bg-gray-900/20 backdrop-blur-sm p-1 rounded-full inline-flex flex-wrap justify-center border border-white/5 shadow-sm">
         {tabs.map((tab) => (
           <button
             key={tab.id}
-            className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
               viewMode === tab.id
-                ? "bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-500/20"
-                : "text-gray-300 hover:bg-white/5 hover:text-white"
+                ? "bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-md"
+                : "text-gray-300 hover:text-white hover:bg-white/5"
             }`}
             type="button"
             onClick={() => onViewChange(tab.id)}
+            aria-current={viewMode === tab.id ? "page" : undefined}
           >
             {tab.label}
           </button>

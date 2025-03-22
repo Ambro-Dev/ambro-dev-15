@@ -531,7 +531,7 @@ export default function ProjectDetailsPage() {
                   <div className="grid grid-cols-2 md:grid-cols-1 gap-4">
                     {project.images.map((img, index) => (
                       <div
-                        key={img}
+                        key={`${img}-${index}`}
                         className={`cursor-pointer transition-all ${
                           activeImage === index
                             ? "ring-2 ring-indigo-500"

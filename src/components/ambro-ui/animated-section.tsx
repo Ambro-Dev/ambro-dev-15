@@ -6,7 +6,15 @@ import {
   useInView,
   type Variants,
 } from "framer-motion";
-import React, { type FC, type ReactNode, useRef, useMemo, memo } from "react";
+import React, {
+  type FC,
+  type ReactNode,
+  useRef,
+  useMemo,
+  memo,
+  useEffect,
+  useState,
+} from "react";
 
 /**
  * AnimatedSection Component
@@ -61,6 +69,22 @@ export const AnimatedSection: FC<{
     customVariants,
   }) => {
     const ref = useRef<HTMLDivElement>(null);
+    // Add a key state to force re-render on navigation
+    const [componentKey, setComponentKey] = useState<number>(Date.now());
+
+    // Reset animation state on navigation
+    useEffect(() => {
+      const handleRouteChange = () => {
+        setComponentKey(Date.now());
+      };
+
+      window.addEventListener("popstate", handleRouteChange);
+
+      return () => {
+        window.removeEventListener("popstate", handleRouteChange);
+      };
+    }, []);
+
     const inView = useInView(ref, {
       amount: threshold,
       once,
@@ -147,6 +171,7 @@ export const AnimatedSection: FC<{
 
     return (
       <Component
+        key={componentKey}
         ref={ref}
         initial="hidden"
         animate={inView ? "visible" : "hidden"}

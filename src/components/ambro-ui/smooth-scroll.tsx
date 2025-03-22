@@ -8,6 +8,7 @@ import {
   useCallback,
   useMemo,
   useRef,
+  useState,
 } from "react";
 
 export const SmoothScroll: FC<{
@@ -33,6 +34,8 @@ export const SmoothScroll: FC<{
   // Create the motion value at the component level
   const scrollY = useMotionValue(0);
   const isScrolling = useRef(false);
+  // Add component key for re-rendering
+  const [componentKey, setComponentKey] = useState<number>(Date.now());
 
   // Memoize the animation options to avoid recreating objects
   const animationOptions = useMemo(
@@ -42,6 +45,12 @@ export const SmoothScroll: FC<{
     }),
     [duration, ease]
   );
+
+  // Force scroll to top on component mount
+  useEffect(() => {
+    // Reset scroll position to top on mount
+    window.scrollTo(0, 0);
+  }, []);
 
   // Define the scroll function with fewer dependencies
   const scrollWithFramer = useCallback(
@@ -76,6 +85,26 @@ export const SmoothScroll: FC<{
     },
     [scrollY, animationOptions] // Now we only depend on stable references
   );
+
+  // Reset component state on navigation
+  useEffect(() => {
+    const handleRouteChange = () => {
+      isScrolling.current = false;
+      scrollY.set(0);
+      setComponentKey(Date.now());
+
+      // Force scroll to top
+      window.scrollTo(0, 0);
+    };
+
+    window.addEventListener("popstate", handleRouteChange);
+    window.addEventListener("load", handleRouteChange);
+
+    return () => {
+      window.removeEventListener("popstate", handleRouteChange);
+      window.removeEventListener("load", handleRouteChange);
+    };
+  }, [scrollY]);
 
   useEffect(() => {
     if (disabled) return;
@@ -135,5 +164,5 @@ export const SmoothScroll: FC<{
     scrollWithFramer,
   ]);
 
-  return <>{children}</>;
+  return <div key={componentKey}>{children}</div>;
 };

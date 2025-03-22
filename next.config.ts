@@ -37,6 +37,34 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "2mb",
     },
   },
+
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.optimization.splitChunks = {
+        chunks: "all",
+        maxInitialRequests: 25,
+        minSize: 20000,
+        cacheGroups: {
+          default: false,
+          vendors: false,
+          commons: {
+            name: "commons",
+            chunks: "all",
+            minChunks: 2,
+            reuseExistingChunk: true,
+          },
+          uiComponents: {
+            test: /[\\/]components[\\/]ambro-ui[\\/]/,
+            name: "ui-components",
+            chunks: "all",
+            priority: 10,
+          },
+        },
+      };
+    }
+    return config;
+  },
+
   poweredByHeader: false,
   compress: true,
   reactStrictMode: true,

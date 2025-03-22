@@ -1,27 +1,61 @@
 // src/app/kontakt/page.tsx
-import ContactPageContent from "@/components/contact/contact-page-content";
-import ContactSchemaJsonLd from "@/lib/contact";
-import { Suspense } from "react";
+import { headers } from "next/headers";
+import dynamic from "next/dynamic";
 import { constructMetadata } from "@/lib/metadata";
+
+// Import AssetPreloader
+const AssetPreloader = dynamic(
+  () => import("@/components/ambro-ui/asset-preloader"),
+  {
+    ssr: true,
+  }
+);
+
+// Preload critical components
+const ContactSchemaJsonLd = dynamic(
+  () => import("@/lib/contact").then((mod) => mod.ContactSchemaJsonLd),
+  {
+    ssr: true,
+  }
+);
+
+// Optimize ContactPageContent with preload
+const ContactPageContent = dynamic(
+  () => import("@/components/contact/contact-page-content"),
+  {
+    ssr: true,
+    loading: () => <ContactPageLoading />,
+  }
+);
 
 // Metadane dla strony (SEO)
 export const metadata = constructMetadata({
-  title: "Kontakt | DevOS - Profesjonalne rozwiązania webowe",
+  title: "Kontakt | Ambro-Dev - Profesjonalne rozwiązania IT",
   description:
-    "Skontaktuj się z DevOS, aby omówić Twój projekt. Oferujemy profesjonalne usługi webowe, aplikacje i rozwiązania dla biznesu.",
-  canonical: "https://devos.pl/kontakt",
+    "Skontaktuj się z Ambro-Dev, aby omówić Twój projekt. Oferuję profesjonalne usługi chmurowe, aplikacje webowe, projektowanie i monitorowanie infrastruktury sieciowe oraz rozwiązania dla biznesu.",
+  canonical: "https://ambro.dev/kontakt",
 });
 
+// Critical assets to preload
+const criticalImages = [
+  "/logo.webp",
+  // Add other critical images here
+];
+
 export default function ContactPage() {
+  // Force headers evaluation to activate caching
+  headers();
+
   return (
     <>
+      {/* Preload critical assets */}
+      <AssetPreloader images={criticalImages} />
+
       {/* Structured data dla Google */}
       <ContactSchemaJsonLd />
 
-      {/* Główna zawartość strony w Suspense dla lepszego loadingu */}
-      <Suspense fallback={<ContactPageLoading />}>
-        <ContactPageContent />
-      </Suspense>
+      {/* Główna zawartość strony */}
+      <ContactPageContent />
     </>
   );
 }

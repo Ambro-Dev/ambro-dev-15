@@ -1,7 +1,7 @@
 // src/components/services/service-process-steps.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Clock,
@@ -567,121 +567,182 @@ const defaultProcess = serviceProcesses.infrastructure;
 const ServiceProcessSteps: React.FC<{
   serviceId: string;
   primaryColor: string;
-  secondaryColor: string;
 }> = ({ serviceId, primaryColor }) => {
   const [activeStep, setActiveStep] = useState<string | null>(null);
   const [steps, setSteps] = useState<Step[]>([]);
+  const timelineRef = useRef<HTMLDivElement>(null);
 
+  // Set up steps and active step
   useEffect(() => {
-    // Pobierz kroki dla wskazanej usługi lub użyj domyślnych
     const serviceSteps = serviceProcesses[serviceId] || defaultProcess;
     setSteps(serviceSteps);
 
-    // Ustaw pierwszy krok jako aktywny przy początkowym ładowaniu
     if (serviceSteps.length > 0 && !activeStep) {
       setActiveStep(serviceSteps[0].id);
     }
   }, [serviceId, activeStep]);
 
+  // Timeline animation variants
+  const timelineVariants = {
+    initial: { width: "0%" },
+    animate: {
+      width: "100%",
+      transition: {
+        duration: 1.5,
+        ease: "easeOut",
+        delay: 0.3,
+      },
+    },
+  };
+
+  // Step animation variants
+  const stepVariants = {
+    inactive: { scale: 1 },
+    active: {
+      scale: 1.05,
+      transition: { type: "spring", stiffness: 300, damping: 20 },
+    },
+  };
+
+  // Content animation variants
+  const contentVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.5 },
+    },
+    exit: {
+      opacity: 0,
+      y: -20,
+      transition: { duration: 0.3 },
+    },
+  };
+
   return (
     <div className="flex flex-col">
-      {/* Linia czasu procesu */}
-      <div className="flex items-center justify-between mb-8 overflow-x-auto pb-4">
-        {steps.map((step, index) => (
-          <div key={step.id} className="flex items-center min-w-fit">
-            {/* Krok */}
-            <motion.button
-              type="button"
-              className={`relative flex flex-col items-center group ${
-                activeStep === step.id
-                  ? `text-${primaryColor}-400`
-                  : "text-gray-400 hover:text-gray-300"
-              }`}
-              onClick={() => setActiveStep(step.id)}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center z-10 ${
-                  activeStep === step.id
-                    ? `bg-${primaryColor}-900/50 border-2 border-${primaryColor}-500`
-                    : "bg-gray-800 border border-gray-700"
-                }`}
-              >
-                {index + 1}
-              </div>
-              <span className="mt-2 text-sm font-medium whitespace-nowrap">
-                {step.title}
-              </span>
+      {/* Modern Timeline */}
+      <div
+        ref={timelineRef}
+        className="relative flex items-center justify-between mb-12 overflow-x-auto pb-4 pt-2"
+      >
+        <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-gray-800 transform -translate-y-1/2 z-0"></div>
 
-              {/* Wskaźnik aktywnego kroku */}
-              {activeStep === step.id && (
+        <motion.div
+          className={`absolute top-1/2 left-0 h-0.5 bg-${primaryColor}-500 transform -translate-y-1/2 z-10`}
+          variants={timelineVariants}
+          initial="initial"
+          animate="animate"
+        />
+
+        {steps.map((step, index) => {
+          const isActive = step.id === activeStep;
+          const isPast = steps.findIndex((s) => s.id === activeStep) > index;
+
+          return (
+            <motion.div
+              key={step.id}
+              className={`relative z-20 flex flex-col items-center cursor-pointer px-4 min-w-[100px]`}
+              onClick={() => setActiveStep(step.id)}
+              variants={stepVariants}
+              animate={isActive ? "active" : "inactive"}
+              whileHover={{ scale: 1.05 }}
+            >
+              <motion.div
+                className={`w-10 h-10 rounded-full flex items-center justify-center mb-2
+                  ${
+                    isActive
+                      ? `bg-${primaryColor}-500 text-white shadow-lg shadow-${primaryColor}-500/20`
+                      : isPast
+                      ? `bg-${primaryColor}-900/50 text-${primaryColor}-300`
+                      : "bg-gray-800 text-gray-400"
+                  }`}
+                initial={{ scale: 0.8 }}
+                animate={{ scale: isActive ? 1.1 : 1 }}
+                transition={{ type: "spring", stiffness: 500, damping: 30 }}
+              >
+                {isPast ? (
+                  <CheckCircle className="w-5 h-5" />
+                ) : (
+                  <step.icon className="w-5 h-5" />
+                )}
+              </motion.div>
+
+              <div className="text-center">
+                <p
+                  className={`text-sm font-medium transition-colors duration-200 ${
+                    isActive ? `text-${primaryColor}-400` : "text-gray-400"
+                  }`}
+                >
+                  {step.title}
+                </p>
+                <p className="text-xs text-gray-500 mt-1 hidden sm:block">
+                  {step.duration}
+                </p>
+              </div>
+
+              {isActive && (
                 <motion.div
-                  className={`absolute -bottom-1 left-0 right-0 h-0.5 bg-${primaryColor}-500`}
-                  layoutId="activeStep"
-                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                  className={`absolute -bottom-2 w-2 h-2 rounded-full bg-${primaryColor}-500`}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  layoutId="activeIndicator"
                 />
               )}
-            </motion.button>
-
-            {/* Linia łącząca (poza ostatnim krokiem) */}
-            {index < steps.length - 1 && (
-              <div
-                className={`w-10 md:w-20 h-0.5 mx-2 ${
-                  activeStep === step.id || activeStep === steps[index + 1].id
-                    ? `bg-${primaryColor}-500`
-                    : "bg-gray-700"
-                }`}
-              />
-            )}
-          </div>
-        ))}
+            </motion.div>
+          );
+        })}
       </div>
 
-      {/* Szczegóły wybranego kroku */}
+      {/* Content Area */}
       <AnimatePresence mode="wait">
         {steps.map((step) => {
           if (step.id !== activeStep) return null;
 
           return (
             <motion.div
-              key={step.id}
-              className={`p-6 bg-gray-800/50 rounded-xl border border-${primaryColor}-500/20`}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
+              key={`content-${step.id}`}
+              className="grid md:grid-cols-2 gap-8 rounded-xl border border-gray-800/50 bg-gray-900/30 p-6"
+              variants={contentVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
             >
-              <div className="flex flex-col md:flex-row gap-8">
-                <div className="md:w-1/2">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div
-                      className={`p-2.5 rounded-lg bg-${primaryColor}-900/30 text-${primaryColor}-400`}
+              <div>
+                <div className="flex items-center gap-4 mb-6">
+                  <div
+                    className={`p-3 rounded-full bg-${primaryColor}-900/30 text-${primaryColor}-400 shadow-inner shadow-${primaryColor}-500/10`}
+                  >
+                    <step.icon className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3
+                      className={`text-xl font-semibold text-${primaryColor}-300`}
                     >
-                      <step.icon size={24} />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold">{step.title}</h3>
-                      <p className="text-gray-400">{step.description}</p>
-                    </div>
+                      {step.title}
+                    </h3>
+                    <p className="text-gray-400 text-sm">
+                      Szacowany czas: {step.duration}
+                    </p>
                   </div>
+                </div>
 
-                  <div className="mb-4">
-                    <div className="flex items-center gap-2 text-gray-400 mb-2">
-                      <Clock size={16} />
-                      <span>
-                        Szacowany czas trwania: <strong>{step.duration}</strong>
-                      </span>
-                    </div>
-                  </div>
+                <p className="text-gray-300 mb-6 leading-relaxed">
+                  {step.description}
+                </p>
+
+                <div className="bg-gray-800/30 rounded-lg p-5 backdrop-blur-sm border border-gray-800/50">
+                  <h4 className="font-medium text-white mb-4 flex items-center gap-2">
+                    <span
+                      className={`w-1 h-5 bg-${primaryColor}-500 rounded-sm inline-block`}
+                    ></span>
+                    Kluczowe elementy
+                  </h4>
 
                   <ul className="space-y-2">
                     {step.keyPoints.map((point, idx) => (
                       <motion.li
-                        key={`point-${
-                          // biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
-                          idx
-                        }`}
+                        key={`point-${idx}`}
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: idx * 0.1 }}
@@ -709,129 +770,148 @@ const ServiceProcessSteps: React.FC<{
                     ))}
                   </ul>
                 </div>
-
-                <div className="md:w-1/2 flex items-center justify-center">
-                  <div className="w-full h-full max-h-60 flex items-center justify-center rounded-lg bg-gray-900/50 p-4 border border-gray-800/50">
-                    <div className={`text-${primaryColor}-400 opacity-20`}>
-                      <svg
-                        className="w-32 h-32"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <title>process</title>
-                        {step.id === "analysis" ||
-                        step.id === "requirements" ||
-                        step.id === "discovery" ||
-                        step.id === "audit" ? (
-                          // Analiza / Wymagania
-                          <path
-                            d="M9 5H7C5.89543 5 5 5.89543 5 7V19C5 20.1046 5.89543 21 7 21H17C18.1046 21 19 20.1046 19 19V7C19 5.89543 18.1046 5 17 5H15M9 5C9 6.10457 9.89543 7 11 7H13C14.1046 7 15 6.10457 15 5M9 5C9 3.89543 9.89543 3 11 3H13C14.1046 3 15 3.89543 15 5M12 12H15M12 16H15M9 12H9.01M9 16H9.01"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            fill="currentColor"
-                          />
-                        ) : step.id === "design" ||
-                          step.id === "planning" ||
-                          step.id === "strategy" ? (
-                          // Projektowanie / Planowanie
-                          <path
-                            d="M9 3H5C3.89543 3 3 3.89543 3 5V19C3 20.1046 3.89543 21 5 21H19C20.1046 21 21 20.1046 21 19V5C21 3.89543 20.1046 3 19 3H15M9 3C9 4.10457 9.89543 5 11 5H13C14.1046 5 15 4.10457 15 3M9 3C9 1.89543 9.89543 1 11 1H13C14.1046 1 15 1.89543 15 3M12 10L16 14M12 10L8 14M12 10V19"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            fill="currentColor"
-                          />
-                        ) : step.id === "implementation" ||
-                          step.id === "development" ||
-                          step.id === "setup" ? (
-                          // Implementacja / Rozwój
-                          <path
-                            d="M10 20L14 4M18 8L22 12L18 16M6 16L2 12L6 8"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            fill="currentColor"
-                          />
-                        ) : step.id === "testing" ||
-                          step.id === "validation" ? (
-                          // Testowanie / Walidacja
-                          <path
-                            d="M9 12L11 14L15 10M20.618 5.984C20.8572 6.52313 21 7.10495 21 7.71429C21 10.0811 19.1215 12 16.8 12C16.8 14.8406 14.6255 17.1429 12 17.1429C9.37446 17.1429 7.19996 14.8406 7.19996 12C4.87848 12 2.99996 10.0811 2.99996 7.71429C2.99996 7.10495 3.14271 6.52313 3.38195 5.984C4.24972 6.63328 5.31187 7 6.42854 7C8.51896 7 10.2538 5.48399 10.6526 3.5M11 12C11 14.2091 9.20914 16 7 16C4.79086 16 3 14.2091 3 12C3 9.79086 4.79086 8 7 8C9.20914 8 11 9.79086 11 12Z"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            fill="currentColor"
-                          />
-                        ) : (
-                          // Wdrożenie / Zakończenie
-                          <path
-                            d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            fill="currentColor"
-                          />
-                        )}
-                      </svg>
-                    </div>
-                  </div>
-                </div>
               </div>
 
-              {/* Nawigacja do kolejnego/poprzedniego kroku */}
-              <div className="flex justify-between mt-8">
-                <button
-                  type="button"
-                  className={`flex items-center gap-2 px-3 py-1 rounded-md bg-gray-800 hover:bg-gray-700 transition-colors ${
-                    steps.findIndex((s) => s.id === activeStep) === 0
-                      ? "opacity-50 cursor-not-allowed"
-                      : ""
-                  }`}
-                  onClick={() => {
-                    const currentIndex = steps.findIndex(
-                      (s) => s.id === activeStep
-                    );
-                    if (currentIndex > 0) {
-                      setActiveStep(steps[currentIndex - 1].id);
-                    }
-                  }}
-                  disabled={steps.findIndex((s) => s.id === activeStep) === 0}
+              <div className="flex items-center justify-center">
+                <div
+                  className={`relative w-full h-full max-h-60 flex items-center justify-center rounded-lg 
+                    bg-gradient-to-br from-gray-900 to-gray-900/80 p-4 border border-gray-800/50 overflow-hidden`}
                 >
-                  <ArrowRight className="w-4 h-4 rotate-180" />
-                  <span>Poprzedni krok</span>
-                </button>
+                  <div
+                    className={`text-${primaryColor}-400 opacity-10 absolute inset-0 flex items-center justify-center`}
+                  >
+                    <svg
+                      className="w-full h-full max-w-[240px] max-h-[240px]"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <title>process</title>
+                      {step.id === "analysis" ||
+                      step.id === "requirements" ||
+                      step.id === "discovery" ||
+                      step.id === "audit" ? (
+                        // Analysis / Requirements
+                        <path
+                          d="M9 5H7C5.89543 5 5 5.89543 5 7V19C5 20.1046 5.89543 21 7 21H17C18.1046 21 19 20.1046 19 19V7C19 5.89543 18.1046 5 17 5H15M9 5C9 6.10457 9.89543 7 11 7H13C14.1046 7 15 6.10457 15 5M9 5C9 3.89543 9.89543 3 11 3H13C14.1046 3 15 3.89543 15 5M12 12H15M12 16H15M9 12H9.01M9 16H9.01"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          fill="currentColor"
+                        />
+                      ) : step.id === "planning" ||
+                        step.id === "design" ||
+                        step.id === "strategy" ? (
+                        // Planning / Design
+                        <path
+                          d="M9 4.45c.74-.77 1.07-1.55 2.93-1.45C14.08 3.03 15 4.15 15 5.5c0 1.8-1.98 3.08-3.5 4.5-1.5 1.35-2 2.05-2.5 3.5m0 4v.5m5-11c1.21 0 2.5.8 2.5 2.5S16 12 14 12c-1.5 0-2.5-.5-2.5-1"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          fill="currentColor"
+                        />
+                      ) : step.id === "development" ||
+                        step.id === "setup" ||
+                        step.id === "implementation" ? (
+                        // Development / Implementation
+                        <path
+                          d="M8 9l3 3-3 3m5 0h3M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          fill="currentColor"
+                        />
+                      ) : step.id === "testing" ||
+                        step.id === "validation" ||
+                        step.id === "verification" ? (
+                        // Testing / Validation
+                        <path
+                          d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          fill="currentColor"
+                        />
+                      ) : (
+                        // Deployment / Final Step
+                        <path
+                          d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          fill="currentColor"
+                        />
+                      )}
+                    </svg>
+                  </div>
 
-                <button
-                  type="button"
-                  className={`flex items-center gap-2 px-3 py-1 rounded-md bg-${primaryColor}-900/30 hover:bg-${primaryColor}-900/50 text-${primaryColor}-400 transition-colors ${
-                    steps.findIndex((s) => s.id === activeStep) ===
-                    steps.length - 1
-                      ? "opacity-50 cursor-not-allowed"
-                      : ""
-                  }`}
-                  onClick={() => {
-                    const currentIndex = steps.findIndex(
-                      (s) => s.id === activeStep
-                    );
-                    if (currentIndex < steps.length - 1) {
-                      setActiveStep(steps[currentIndex + 1].id);
-                    }
-                  }}
-                  disabled={
-                    steps.findIndex((s) => s.id === activeStep) ===
-                    steps.length - 1
-                  }
-                >
-                  <span>Następny krok</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
+                  <motion.div
+                    className={`absolute bottom-4 right-4 text-${primaryColor}-400 text-sm font-mono bg-${primaryColor}-900/20 px-2 py-1 rounded`}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                  >
+                    Step {steps.findIndex((s) => s.id === step.id) + 1}/
+                    {steps.length}
+                  </motion.div>
+                </div>
               </div>
             </motion.div>
           );
         })}
       </AnimatePresence>
+
+      {/* Navigation Controls */}
+      <div className="flex justify-between mt-8">
+        <motion.button
+          className={`px-4 py-2 rounded-md border border-gray-800 flex items-center gap-2 
+            ${
+              steps.findIndex((s) => s.id === activeStep) === 0
+                ? "opacity-50 cursor-not-allowed bg-gray-900/30 text-gray-500"
+                : "bg-gray-900/60 text-gray-300 hover:bg-gray-800/80 hover:border-gray-700"
+            }`}
+          disabled={steps.findIndex((s) => s.id === activeStep) === 0}
+          onClick={() => {
+            const currentIndex = steps.findIndex((s) => s.id === activeStep);
+            if (currentIndex > 0) {
+              setActiveStep(steps[currentIndex - 1].id);
+            }
+          }}
+          whileHover={{
+            scale: steps.findIndex((s) => s.id === activeStep) === 0 ? 1 : 1.03,
+          }}
+          whileTap={{
+            scale: steps.findIndex((s) => s.id === activeStep) === 0 ? 1 : 0.98,
+          }}
+        >
+          <ArrowRight className="w-4 h-4 transform rotate-180" />
+          <span>Poprzedni krok</span>
+        </motion.button>
+
+        <motion.button
+          className={`px-4 py-2 rounded-md flex items-center gap-2
+            ${
+              steps.findIndex((s) => s.id === activeStep) === steps.length - 1
+                ? `bg-${primaryColor}-600 text-white border border-${primaryColor}-500`
+                : `bg-${primaryColor}-600/90 hover:bg-${primaryColor}-500 text-white border border-${primaryColor}-500/80`
+            }`}
+          onClick={() => {
+            const currentIndex = steps.findIndex((s) => s.id === activeStep);
+            if (currentIndex < steps.length - 1) {
+              setActiveStep(steps[currentIndex + 1].id);
+            }
+          }}
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          <span>
+            {steps.findIndex((s) => s.id === activeStep) === steps.length - 1
+              ? "Zakończ proces"
+              : "Następny krok"}
+          </span>
+          <ArrowRight className="w-4 h-4" />
+        </motion.button>
+      </div>
     </div>
   );
 };

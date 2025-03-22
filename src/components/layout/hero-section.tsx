@@ -7,8 +7,8 @@ import {
   useScroll,
   useTransform,
   Variants,
+  AnimatePresence,
 } from "framer-motion";
-import { AnimatedSection } from "@/components/ambro-ui/animated-section";
 
 // Import all components
 import { HeroBackground } from "@/components/hero/HeroBackground";
@@ -28,24 +28,57 @@ const HeroSection = memo(() => {
   const sectionRef = useRef<HTMLElement>(null);
   const [isHovering, setIsHovering] = useState<boolean>(false);
   const [isClient, setIsClient] = useState<boolean>(false);
+  const [key, setKey] = useState<number>(Date.now());
+  const [isVisible, setIsVisible] = useState<boolean>(false);
 
   // Set isClient to true once component mounts (client-side only)
+  // Add a key reset on navigation to force component re-render
   useEffect(() => {
     setIsClient(true);
+
+    // Force visible immediately on mount
+    setIsVisible(true);
+
+    // Force reset component on route change
+    const resetComponent = () => {
+      setKey(Date.now());
+      setIsHovering(false);
+
+      // Force scroll to top when navigating to this page
+      window.scrollTo(0, 0);
+
+      // Force visible state
+      setIsVisible(true);
+    };
+
+    // Add router change event listener
+    window.addEventListener("popstate", resetComponent);
+
+    // Also reset on page load/visibility change
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") {
+        resetComponent();
+      }
+    });
+
+    return () => {
+      window.removeEventListener("popstate", resetComponent);
+      document.removeEventListener("visibilitychange", resetComponent);
+    };
   }, []);
 
-  // Scroll-driven animations
+  // Scroll-driven animations with refined values
   const { scrollYProgress } = useScroll({
     target: sectionRef,
     offset: ["start start", "end start"],
   });
 
   const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
-  const y = useTransform(scrollYProgress, [0, 0.5], [0, 100]);
-  const scale = useTransform(scrollYProgress, [0, 0.5], [1, 0.9]);
-  const gridParallax = useTransform(scrollYProgress, [0, 1], [0, -50]);
+  const y = useTransform(scrollYProgress, [0, 0.5], [0, 30]);
+  const scale = useTransform(scrollYProgress, [0, 0.5], [1, 0.98]);
+  const gridParallax = useTransform(scrollYProgress, [0, 1], [0, -20]);
 
-  // Animation variants for staggered children animations
+  // Refined animation variants for smoother transitions
   const containerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: {
@@ -76,79 +109,84 @@ const HeroSection = memo(() => {
       };
 
   return (
-    <section
-      ref={sectionRef}
-      className="relative min-h-[100dvh] flex flex-col items-center justify-center px-4 md:px-6 overflow-hidden"
-    >
-      {/* Background elements */}
-      <HeroBackground
-        prefersReducedMotion={prefersReducedMotion}
-        gridParallax={gridParallax}
-      />
-
-      <AnimatedSection
-        animation="fadeIn"
-        delay={0.2}
-        className="relative z-10 max-w-5xl mx-auto text-center"
+    <AnimatePresence>
+      <section
+        key={key}
+        ref={sectionRef}
+        className="relative min-h-[100dvh] flex flex-col items-center justify-center px-4 md:px-6 overflow-hidden bg-gradient-to-b from-black via-gray-950 to-gray-900"
       >
+        {/* Refined background elements */}
+        <HeroBackground
+          prefersReducedMotion={prefersReducedMotion}
+          gridParallax={gridParallax}
+        />
+
         <motion.div
-          {...animationSettings}
-          style={{
-            opacity: prefersReducedMotion ? 1 : opacity,
-            y: prefersReducedMotion ? 0 : y,
-            scale: prefersReducedMotion ? 1 : scale,
-          }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+          className="relative z-10 max-w-5xl mx-auto text-center"
         >
-          {/* Interactive badge */}
-          <HeroBadge
-            prefersReducedMotion={prefersReducedMotion}
-            itemVariants={itemVariants}
-          />
+          <motion.div
+            {...animationSettings}
+            style={{
+              opacity: isVisible ? 1 : prefersReducedMotion ? 1 : opacity,
+              y: prefersReducedMotion ? 0 : y,
+              scale: prefersReducedMotion ? 1 : scale,
+            }}
+            className="space-y-12"
+          >
+            {/* Refined badge with subtle animation */}
+            <HeroBadge
+              prefersReducedMotion={prefersReducedMotion}
+              itemVariants={itemVariants}
+            />
 
-          {/* 3D title with hover effect */}
-          <HeroTitle
-            prefersReducedMotion={prefersReducedMotion}
-            itemVariants={itemVariants}
-            isHovering={isHovering}
-            setIsHovering={setIsHovering}
-          />
+            {/* Elegant title with refined hover effect */}
+            <HeroTitle
+              prefersReducedMotion={prefersReducedMotion}
+              itemVariants={itemVariants}
+              isHovering={isHovering}
+              setIsHovering={setIsHovering}
+            />
 
-          {/* Improved subtitle */}
-          <HeroSubtitle
-            prefersReducedMotion={prefersReducedMotion}
-            itemVariants={itemVariants}
-          />
+            {/* Refined subtitle with subtle gradient */}
+            <HeroSubtitle
+              prefersReducedMotion={prefersReducedMotion}
+              itemVariants={itemVariants}
+            />
 
-          {/* Enhanced description */}
-          <HeroDescription
-            prefersReducedMotion={prefersReducedMotion}
-            itemVariants={itemVariants}
-          />
+            {/* Elegant description with improved typography */}
+            <HeroDescription
+              prefersReducedMotion={prefersReducedMotion}
+              itemVariants={itemVariants}
+            />
 
-          {/* Call to action buttons */}
-          <CTAButtons
-            prefersReducedMotion={prefersReducedMotion}
-            itemVariants={itemVariants}
-          />
+            {/* Refined CTA buttons with subtle hover effects */}
+            <CTAButtons
+              prefersReducedMotion={prefersReducedMotion}
+              itemVariants={itemVariants}
+            />
 
-          {/* Tech badges */}
-          <TechBadges
-            prefersReducedMotion={prefersReducedMotion}
-            itemVariants={itemVariants}
-          />
+            {/* Minimalist tech badges */}
+            <TechBadges
+              prefersReducedMotion={prefersReducedMotion}
+              itemVariants={itemVariants}
+            />
 
-          {/* Scroll indicator */}
-          <ScrollIndicator
-            isClient={isClient}
-            prefersReducedMotion={prefersReducedMotion}
-            itemVariants={itemVariants}
-          />
+            {/* Elegant scroll indicator */}
+            <ScrollIndicator
+              isClient={isClient}
+              prefersReducedMotion={prefersReducedMotion}
+              itemVariants={itemVariants}
+            />
+          </motion.div>
         </motion.div>
-      </AnimatedSection>
 
-      {/* CSS animations */}
-      <AnimationStyles />
-    </section>
+        {/* Refined CSS animations */}
+        <AnimationStyles />
+      </section>
+    </AnimatePresence>
   );
 });
 

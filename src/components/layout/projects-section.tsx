@@ -25,11 +25,15 @@ export default function ProjectsSection({
   projects,
 }: ClientProjectsSectionProps) {
   return (
-    <section id="projects" className="py-32 px-6 relative overflow-hidden">
-      {/* Background gradient orbs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-20 -left-20 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl"></div>
-        <div className="absolute -bottom-20 -right-20 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl"></div>
+    <section
+      id="projects"
+      className="py-32 px-6 relative overflow-hidden section-spacing"
+    >
+      {/* Simplified background elements for global design */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+        {/* Soft gradient orbs */}
+        <div className="absolute -top-20 -left-20 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-20 -right-20 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl"></div>
       </div>
 
       <div className="max-w-6xl mx-auto relative z-10">
@@ -44,7 +48,7 @@ export default function ProjectsSection({
           />
         </AnimatedSection>
 
-        <div className="mt-24 space-y-32">
+        <div className="mt-16 space-y-24">
           {projects.map((project, index) => (
             <AnimatedSection
               key={project.title}
@@ -52,23 +56,16 @@ export default function ProjectsSection({
               delay={0.3}
               className="relative"
             >
-              <motion.div
-                className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 rounded-3xl backdrop-blur-sm border border-white/10"
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-              />
-
               <div
-                className={`grid md:grid-cols-2 gap-12 p-8 md:p-12 relative rounded-3xl`}
+                className={`grid md:grid-cols-2 gap-12 p-8 md:p-10 relative rounded-2xl border border-gray-800/30 backdrop-blur-sm bg-gray-900/20`}
               >
                 {/* Project Image - Alternate order based on index */}
                 <div className={`${index % 2 !== 0 ? "md:order-2" : ""}`}>
                   <div className="group relative h-full">
                     <motion.div
-                      className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl blur-sm opacity-50 group-hover:opacity-90 transition duration-500"
+                      className="absolute -inset-1 bg-gradient-to-r from-indigo-500/40 to-blue-600/40 rounded-xl blur-sm opacity-40 group-hover:opacity-70 transition duration-500"
                       initial={{ opacity: 0, scale: 0.98 }}
-                      whileInView={{ opacity: 0.5, scale: 1 }}
+                      whileInView={{ opacity: 0.4, scale: 1 }}
                       transition={{ duration: 0.4 }}
                     />
                     <ClipMask
@@ -77,12 +74,13 @@ export default function ProjectsSection({
                       height="100%"
                       animate
                       expandOnHover
-                      shadowSize={20}
-                      borderWidth={2}
+                      hoverScale={1.03}
+                      shadowSize={15}
+                      borderWidth={1}
                       borderColor="white"
-                      gradientColors={["#4f46e5", "#7c3aed", "#ec4899"]}
+                      gradientColors={["#4f46e5", "#3b82f6", "#6366f1"]}
                     >
-                      <div className="overflow-hidden rounded-2xl h-full aspect-video">
+                      <div className="overflow-hidden rounded-xl h-full aspect-video">
                         <Image
                           src={project.image}
                           alt={project.title}
@@ -106,28 +104,30 @@ export default function ProjectsSection({
                     whileInView={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.3 }}
                   >
-                    <h3 className="text-3xl font-bold mb-4">
+                    <h3 className="text-2xl md:text-3xl font-bold mb-4">
                       <GradientText
                         from={project.color.split(" ")[0].replace("from-", "")}
                         to={project.color.split(" ")[1].replace("to-", "")}
+                        glowEffect
+                        glowIntensity={5}
                       >
                         {project.title}
                       </GradientText>
                     </h3>
 
-                    <div className="text-gray-200 mb-8 text-lg">
+                    <div className="text-gray-300 mb-6 text-base leading-relaxed">
                       <RevealText delay={0.4}>{project.description}</RevealText>
                     </div>
 
-                    <div className="mb-8">
-                      <h4 className="text-sm uppercase text-gray-400 mb-3 tracking-wider font-medium">
+                    <div className="mb-6">
+                      <h4 className="text-xs uppercase text-gray-400 mb-3 tracking-wider font-medium">
                         Wykorzystane technologie
                       </h4>
                       <div className="flex flex-wrap gap-2">
                         {project.technologies.map((tech) => (
                           <span
                             key={tech}
-                            className="px-4 py-1.5 text-xs rounded-full bg-gray-800/60 text-gray-200 border border-gray-700/50 backdrop-blur-sm hover:bg-gray-700/70 transition-colors duration-300"
+                            className="px-3 py-1 text-xs rounded-full bg-gray-800/40 text-gray-200 border border-gray-700/30 backdrop-blur-sm hover:bg-gray-700/50 transition-colors duration-300"
                           >
                             {tech}
                           </span>
@@ -137,12 +137,10 @@ export default function ProjectsSection({
 
                     <EnhancedButton
                       variant="tech"
-                      size="md"
-                      magneticEffect
+                      size="sm"
                       glowOnHover
-                      borderGradient
-                      href="/projekty"
-                      className="w-fit"
+                      glowIntensity={8}
+                      className="mt-2"
                     >
                       Zobacz szczegóły
                     </EnhancedButton>

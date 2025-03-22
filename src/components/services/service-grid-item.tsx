@@ -8,9 +8,12 @@ import { Card3D } from "@/components/ambro-ui/card-3d";
 import type { SerializableService } from "@/lib/service-utils";
 
 // Dynamicznie importowany komponent ikony
-const ServiceIcon = dynamic(() => import("./service-icon"), {
-  ssr: true,
-});
+const ServiceIcon = dynamic(
+  () => import("@/components/services/service-icon"),
+  {
+    ssr: true,
+  }
+);
 
 interface ServiceGridItemProps {
   service: SerializableService;
@@ -42,7 +45,11 @@ export default function ServiceGridItem({ service }: ServiceGridItemProps) {
                   <div className="w-6 h-6 bg-indigo-500/20 rounded-full animate-pulse" />
                 }
               >
-                <ServiceIcon serviceId={service.id} size={6} />
+                <ServiceIcon
+                  serviceId={service.id}
+                  isHovered={false}
+                  color={service.color}
+                />
               </Suspense>
             </div>
             <h3 className="text-xl font-semibold">{service.title}</h3>

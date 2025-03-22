@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, Component } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, useScroll, useTransform } from "framer-motion";
@@ -57,11 +57,14 @@ const ServiceTechStack = dynamic(
 );
 
 // Dynamiczny import komponentu ikony z nowszej wersji
-const ServiceIcon = dynamic(() => import("./service-icon"), {
-  loading: () => (
-    <div className="w-10 h-10 bg-indigo-500/20 rounded-full animate-pulse" />
-  ),
-});
+const ServiceIcon = dynamic(
+  () => import("@/components/services/service-icon"),
+  {
+    loading: () => (
+      <div className="w-10 h-10 bg-indigo-500/20 rounded-full animate-pulse" />
+    ),
+  }
+);
 
 // Simple skeleton for loading states
 function ServiceSectionSkeleton() {
@@ -71,6 +74,53 @@ function ServiceSectionSkeleton() {
       <div className="h-64 bg-gray-800/20 rounded animate-pulse" />
     </div>
   );
+}
+
+// Add proper type annotations to the ErrorBoundary
+interface ErrorBoundaryProps {
+  children: React.ReactNode;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+}
+
+// Add a simple error boundary component
+class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  // Remove the parameter completely
+  static getDerivedStateFromError(): ErrorBoundaryState {
+    // Update state so the next render will show the fallback UI
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
+    // You can also log the error to an error reporting service
+    console.error("Error caught by boundary:", error, errorInfo);
+  }
+
+  render(): React.ReactNode {
+    if (this.state.hasError) {
+      // You can render any fallback UI
+      return (
+        <div className="p-6 bg-red-900/20 border border-red-500/30 rounded-lg">
+          <h3 className="text-lg font-medium text-white mb-2">
+            Oops! Something went wrong.
+          </h3>
+          <p className="text-gray-300">
+            We encountered an error loading this component. Please try
+            refreshing the page.
+          </p>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
 }
 
 // Define props for the client component
@@ -399,195 +449,174 @@ export default UserDashboard;`,
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 pt-24 pb-16 relative">
-      {/* Efekty tła z nowszej wersji */}
-      <FloatingBubbles
-        count={8}
-        color={`rgba(${
-          primaryColor === "indigo"
-            ? "99, 102, 241"
-            : primaryColor === "emerald"
-            ? "16, 185, 129"
-            : primaryColor === "sky"
-            ? "14, 165, 233"
-            : primaryColor === "purple"
-            ? "168, 85, 247"
-            : primaryColor === "amber"
-            ? "245, 158, 11"
-            : primaryColor === "pink"
-            ? "236, 72, 153"
-            : "99, 102, 241"
-        }, 0.15)`}
-        minSize={10}
-        maxSize={40}
-        interactive={false}
-        fixed={true}
-      />
+    <div className="min-h-screen bg-gray-950">
+      <ScrollProgress color={`bg-${primaryColor}-500`} />
 
-      {/* Progress bar */}
-      <ScrollProgress
-        position="top"
-        color={`bg-gradient-to-r from-${primaryColor}-500 via-${secondaryColor}-500 to-${primaryColor}-500`}
-      />
+      <div className="max-w-6xl mx-auto pt-24 pb-16 px-4 sm:px-6 relative z-10">
+        {/* Hero Header with Refined Design */}
+        <motion.div
+          ref={headerRef}
+          className="relative w-full h-[50vh] min-h-[400px] max-h-[600px] mb-16 overflow-hidden rounded-2xl"
+          style={{
+            opacity: headerOpacity,
+            scale: headerScale,
+          }}
+        >
+          {/* Subtle Background Pattern */}
+          <div className="absolute inset-0 z-0">
+            <div className="absolute inset-0 bg-gradient-to-b from-black to-transparent z-10" />
+            <div className="absolute inset-0 bg-gradient-to-t from-gray-950 to-transparent z-10" />
+            <div
+              className="absolute inset-0 opacity-10"
+              style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23${
+                  primaryColor === "indigo"
+                    ? "6366f1"
+                    : primaryColor === "emerald"
+                    ? "10b981"
+                    : primaryColor === "blue"
+                    ? "3b82f6"
+                    : primaryColor === "purple"
+                    ? "8b5cf6"
+                    : primaryColor === "amber"
+                    ? "f59e0b"
+                    : primaryColor === "sky"
+                    ? "0ea5e9"
+                    : primaryColor === "pink"
+                    ? "ec4899"
+                    : "6366f1"
+                }' fill-opacity='0.2'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+              }}
+            />
+          </div>
 
-      {/* Structured data for SEO - updated with URL from newer version */}
-      <script
-        type="application/ld+json"
-        // biome-ignore lint/security/noDangerouslySetInnerHtml: <explanation>
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "Service",
-            name: service.title,
-            description: service.description,
-            provider: {
-              "@type": "Organization",
-              name: "Ambro",
-              url: "https://ambro.dev",
-            },
-            url: `https://ambro.dev/uslugi/${service.id}`,
-            serviceType: service.tags[0] || "IT Services",
-            areaServed: "Polska",
-            hasOfferCatalog: {
-              "@type": "OfferCatalog",
-              name: "Usługi IT",
-              itemListElement: service.bulletPoints.map((point, i) => ({
-                "@type": "Offer",
-                itemOffered: {
-                  "@type": "Service",
-                  name: point,
-                },
-                position: i + 1,
-              })),
-            },
-          }),
-        }}
-      />
-
-      {/* Hero Header */}
-      <motion.div
-        ref={headerRef}
-        className="relative w-full h-[40vh] min-h-[300px] max-h-[500px] mb-16 overflow-hidden"
-        style={{
-          opacity: headerOpacity,
-          scale: headerScale,
-        }}
-      >
-        {/* Background Pattern */}
-        <div className="absolute inset-0 z-0">
-          <div className="absolute inset-0 bg-gradient-to-b from-black to-transparent z-10" />
-          <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent z-10" />
-          <div
-            className="absolute inset-0 opacity-20"
-            style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23${
+          {/* Floating particles for visual interest */}
+          <div className="absolute inset-0 z-0 opacity-40">
+            <FloatingBubbles
+              count={8}
+              minSize={2}
+              maxSize={6}
+              color={`rgba(${
                 primaryColor === "indigo"
-                  ? "6366f1"
+                  ? "99, 102, 241"
                   : primaryColor === "emerald"
-                  ? "10b981"
+                  ? "16, 185, 129"
+                  : primaryColor === "blue"
+                  ? "59, 130, 246"
+                  : primaryColor === "purple"
+                  ? "139, 92, 246"
+                  : primaryColor === "amber"
+                  ? "245, 158, 11"
+                  : primaryColor === "sky"
+                  ? "14, 165, 233"
                   : primaryColor === "pink"
-                  ? "ec4899"
-                  : "6366f1"
-              }' fill-opacity='0.2'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-            }}
-          />
+                  ? "236, 72, 153"
+                  : "99, 102, 241"
+              }, 0.6)`}
+              minSpeed={0.5}
+              maxSpeed={1.5}
+              interactive={false}
+            />
+          </div>
+
+          {/* Service Icon */}
+          <motion.div
+            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10"
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.7, ease: [0.34, 1.56, 0.64, 1] }}
+          >
+            <div
+              className={`w-32 h-32 rounded-full bg-gradient-to-br ${service.color} flex items-center justify-center shadow-lg ring-1 ring-white/10`}
+              aria-hidden="true"
+            >
+              <Suspense
+                fallback={
+                  <div className="w-16 h-16 bg-gray-800/50 rounded-full animate-pulse" />
+                }
+              >
+                <ServiceIcon
+                  serviceId={service.id}
+                  size={16}
+                  color={primaryColor}
+                />
+              </Suspense>
+            </div>
+          </motion.div>
+
+          {/* Service Title - Simplified for elegance */}
+          <motion.div
+            className="absolute bottom-16 left-0 right-0 text-center z-10"
+            initial={{ y: 50, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+          >
+            <h1 className="text-4xl md:text-5xl font-bold mb-3">
+              <GradientText
+                from={`${primaryColor}-500`}
+                to={`${secondaryColor}-400`}
+                glowEffect
+                glowIntensity={10}
+              >
+                {service.title}
+              </GradientText>
+            </h1>
+            <p className="text-lg text-gray-300 max-w-2xl mx-auto px-6 font-light">
+              {service.description}
+            </p>
+          </motion.div>
+        </motion.div>
+
+        {/* Refined Navigation Bar - More minimal and elegant */}
+        <div className="sticky top-24 z-30 mb-16">
+          <nav
+            className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gray-900/95 p-4 rounded-xl backdrop-blur-sm border border-gray-800/50 shadow-md"
+            aria-label="Service navigation"
+          >
+            <EnhancedButton
+              variant="ghost"
+              size="sm"
+              onClick={handleBack}
+              aria-label="Wróć do wszystkich usług"
+              className="text-gray-400 hover:text-white transition-colors"
+            >
+              ← Wróć do wszystkich usług
+            </EnhancedButton>
+
+            <div className="flex flex-wrap gap-3">
+              {[
+                "overview",
+                "process",
+                "benefits",
+                "technology",
+                "comparison",
+              ].map((section, index) => (
+                <a
+                  key={section}
+                  href={`#${section}`}
+                  className={`nav-link text-sm transition-colors px-3 py-1.5 rounded-md ${
+                    index === 0
+                      ? `text-white bg-${primaryColor}-500/20 hover:bg-${primaryColor}-500/30 active-section`
+                      : "text-gray-400 hover:text-white hover:bg-gray-800/50"
+                  }`}
+                  aria-current={index === 0 ? "page" : undefined}
+                >
+                  {section === "overview"
+                    ? "Przegląd"
+                    : section === "process"
+                    ? "Proces"
+                    : section === "benefits"
+                    ? "Korzyści"
+                    : section === "technology"
+                    ? "Technologie"
+                    : "Porównanie"}
+                </a>
+              ))}
+            </div>
+          </nav>
         </div>
 
-        {/* Service Icon - with Suspense for Next.js 15 compatibility */}
-        <motion.div
-          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10"
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.7, ease: [0.34, 1.56, 0.64, 1] }}
-        >
-          <div
-            className={`w-32 h-32 rounded-full bg-gradient-to-br ${service.color} flex items-center justify-center shadow-lg shadow-${primaryColor}-600/20`}
-            aria-hidden="true"
-          >
-            <Suspense
-              fallback={
-                <div className="w-16 h-16 bg-gray-800/50 rounded-full animate-pulse" />
-              }
-            >
-              <ServiceIcon serviceId={service.id} size={16} />
-            </Suspense>
-          </div>
-        </motion.div>
-
-        {/* Service Title */}
-        <motion.div
-          className="absolute bottom-10 left-0 right-0 text-center z-10"
-          initial={{ y: 50, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.3, duration: 0.5 }}
-        >
-          <h1 className="text-4xl md:text-5xl font-bold mb-2">
-            <GradientText
-              from={primaryColor}
-              to={secondaryColor}
-              glowEffect
-              glowIntensity={20}
-            >
-              {service.title}
-            </GradientText>
-          </h1>
-          <p className="text-xl text-gray-300 max-w-3xl mx-auto px-6">
-            {service.description}
-          </p>
-        </motion.div>
-      </motion.div>
-
-      <div className="max-w-6xl mx-auto px-6">
-        {/* Navigation Bar - Sticky with active indicators */}
-        <nav
-          className="mb-16 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sticky top-24 z-30 bg-gray-900/95 p-4 rounded-lg backdrop-blur-sm border border-gray-800/50 shadow-lg"
-          aria-label="Service navigation"
-        >
-          <EnhancedButton
-            variant="outline"
-            size="sm"
-            onClick={handleBack}
-            aria-label="Wróć do wszystkich usług"
-          >
-            ← Wróć do wszystkich usług
-          </EnhancedButton>
-
-          <div className="flex flex-wrap gap-3">
-            <a
-              href="#overview"
-              className="nav-link text-sm text-gray-300 hover:text-white transition-colors px-3 py-1 rounded-md hover:bg-gray-800/50 active-section"
-              aria-current="page"
-            >
-              Przegląd
-            </a>
-            <a
-              href="#process"
-              className="nav-link text-sm text-gray-300 hover:text-white transition-colors px-3 py-1 rounded-md hover:bg-gray-800/50"
-            >
-              Proces
-            </a>
-            <a
-              href="#benefits"
-              className="nav-link text-sm text-gray-300 hover:text-white transition-colors px-3 py-1 rounded-md hover:bg-gray-800/50"
-            >
-              Korzyści
-            </a>
-            <a
-              href="#technology"
-              className="nav-link text-sm text-gray-300 hover:text-white transition-colors px-3 py-1 rounded-md hover:bg-gray-800/50"
-            >
-              Technologie
-            </a>
-            <a
-              href="#comparison"
-              className="nav-link text-sm text-gray-300 hover:text-white transition-colors px-3 py-1 rounded-md hover:bg-gray-800/50"
-            >
-              Porównanie
-            </a>
-          </div>
-        </nav>
-
-        {/* Overview Section */}
+        {/* Main content sections */}
         <NavHighlightObserver sectionId="overview">
           <section className="mb-20">
             <AnimatedSection animation="fadeIn">
@@ -603,7 +632,7 @@ export default UserDashboard;`,
                 titleClassName="mb-4"
               />
 
-              <div className="grid md:grid-cols-3 gap-8 mt-8">
+              <div className="grid md:grid-cols-3 gap-8 mt-12">
                 <div className="md:col-span-2">
                   <Card3D
                     interactive={false}
@@ -622,64 +651,54 @@ export default UserDashboard;`,
                         : primaryColor === "pink"
                         ? "236, 72, 153"
                         : "99, 102, 241"
-                    }, 0.4)`}
+                    }, 0.3)`}
                     shadow
-                    bgColor="bg-gray-900/50"
-                    borderColor={`border-${primaryColor}-500/30`}
+                    bgColor="bg-gray-900/40"
+                    borderColor={`border-${primaryColor}-500/20`}
+                    className="p-6 h-full"
                   >
-                    <div className="p-6">
-                      <div className="prose prose-invert max-w-none">
-                        <RevealText delay={0.3} staggerLines>
-                          <p className="text-lg leading-relaxed">
-                            {service.longDescription ||
-                              `Usługa ${service.title} to kompleksowe rozwiązanie pozwalające na optymalizację procesów IT w Twojej firmie. Dzięki wieloletniemu doświadczeniu i wykorzystaniu najnowszych technologii, mogę zaoferować niezawodne i skalowalne rozwiązanie odpowiadające na potrzeby Twojego biznesu.`}
-                          </p>
-                          <p>
-                            Wdrożenie tej usługi pozwala na znaczące zwiększenie
-                            wydajności operacyjnej, redukcję kosztów utrzymania
-                            infrastruktury oraz zapewnienie najwyższego poziomu
-                            bezpieczeństwa. Każdy projekt jest realizowany z
-                            uwzględnieniem indywidualnych wymagań klienta oraz
-                            najlepszych praktyk branżowych.
-                          </p>
-                        </RevealText>
+                    <div className="prose prose-invert prose-lg max-w-none">
+                      <RevealText
+                        delay={0.2}
+                        staggerLines
+                        className="text-gray-300 text-lg leading-relaxed"
+                      >
+                        <p>{service.longDescription}</p>
+                      </RevealText>
 
-                        <div className="mt-8">
-                          <h3 className="text-xl font-bold mb-4">Dla kogo?</h3>
-                          <div className="grid sm:grid-cols-2 gap-4">
-                            {[
-                              "Małe i średnie przedsiębiorstwa",
-                              "Startupy technologiczne",
-                              "Firmy rozwijające własne aplikacje",
-                              "Przedsiębiorstwa z rozbudowaną infrastrukturą IT",
-                            ].map((item, i) => (
+                      <h3 className="text-xl font-semibold mt-8 mb-4">
+                        <GradientText
+                          from={`${primaryColor}-400`}
+                          to={`${secondaryColor}-400`}
+                          preset="tech"
+                        >
+                          Kluczowe elementy usługi
+                        </GradientText>
+                      </h3>
+
+                      <ul className="space-y-3 mt-6">
+                        {service.bulletPoints.map((point, index) => (
+                          <motion.li
+                            key={index}
+                            className="flex items-start gap-3"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{
+                              delay: 0.4 + index * 0.1,
+                              duration: 0.5,
+                            }}
+                          >
+                            <div
+                              className={`flex-shrink-0 w-5 h-5 mt-1 rounded-full bg-${primaryColor}-500/20 flex items-center justify-center`}
+                            >
                               <div
-                                key={`audience-${
-                                  // biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
-                                  i
-                                }`}
-                                className="flex items-center gap-3"
-                              >
-                                <div
-                                  className={`w-8 h-8 rounded-full bg-${primaryColor}-900/30 flex items-center justify-center`}
-                                >
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className={`w-4 h-4 text-${primaryColor}-400`}
-                                    viewBox="0 0 20 20"
-                                    fill="currentColor"
-                                    aria-hidden="true"
-                                  >
-                                    <title>User group</title>
-                                    <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v1h8v-1zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-1a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v1h-3zM4.75 12.094A5.973 5.973 0 004 15v1H1v-1a3 3 0 013.75-2.906z" />
-                                  </svg>
-                                </div>
-                                <span>{item}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
+                                className={`w-2 h-2 rounded-full bg-${primaryColor}-500`}
+                              />
+                            </div>
+                            <span className="text-gray-200">{point}</span>
+                          </motion.li>
+                        ))}
+                      </ul>
                     </div>
                   </Card3D>
                 </div>
@@ -688,55 +707,40 @@ export default UserDashboard;`,
                   <AnimatedGradientBorder
                     borderWidth={1}
                     borderColor={`from-${primaryColor}-500 via-${secondaryColor}-500 to-${primaryColor}-500`}
-                    glowEffect
-                    glowIntensity={5}
-                    animated
-                    backgroundColor="bg-gray-900/50"
                     className="h-full"
+                    glowEffect
+                    glowIntensity={10}
+                    rounded="xl"
                   >
-                    <div className="p-6 h-full flex flex-col">
-                      <h3 className="text-xl font-bold mb-6">
-                        Kluczowe funkcje
+                    <div className="bg-gray-900/40 p-6 h-full rounded-xl">
+                      <h3 className="text-xl font-semibold mb-4">
+                        <HighlightText
+                          color={`bg-${primaryColor}-500/10`}
+                          position="bottom"
+                          height="35%"
+                        >
+                          Specjalizacja
+                        </HighlightText>
                       </h3>
-                      <ul className="space-y-4 flex-grow">
-                        {service.bulletPoints.map((point, index) => (
-                          <motion.li
-                            key={`feature-${
-                              // biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
-                              index
-                            }`}
-                            className="flex items-start"
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.3 + index * 0.1 }}
-                          >
-                            <span
-                              className={`w-6 h-6 rounded-full bg-${primaryColor}-900/30 flex items-center justify-center mr-3 mt-0.5 flex-shrink-0`}
-                              aria-hidden="true"
-                            >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className={`w-4 h-4 text-${primaryColor}-400`}
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                                aria-hidden="true"
-                              >
-                                <title>Checkmark</title>
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M5 13l4 4L19 7"
-                                />
-                              </svg>
-                            </span>
-                            <span className="text-gray-300">{point}</span>
-                          </motion.li>
-                        ))}
-                      </ul>
 
-                      <div className="mt-6 pt-6 border-t border-gray-800">
+                      <div className="space-y-4 mt-6">
+                        {service.tags.map((tag, index) => (
+                          <motion.div
+                            key={index}
+                            className={`inline-block mr-2 mb-2 px-3 py-1 rounded-full text-sm bg-${primaryColor}-500/10 text-${primaryColor}-200 border border-${primaryColor}-500/20`}
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{
+                              delay: 0.6 + index * 0.1,
+                              duration: 0.4,
+                            }}
+                          >
+                            {tag}
+                          </motion.div>
+                        ))}
+                      </div>
+
+                      <div className="mt-8 pt-6 border-t border-gray-800">
                         <Link href={contactUrl} className="block">
                           <EnhancedButton
                             variant="tech"
@@ -744,6 +748,7 @@ export default UserDashboard;`,
                             magneticEffect
                             glowOnHover
                             fullWidth
+                            className="font-medium"
                           >
                             Zapytaj o szczegóły
                           </EnhancedButton>
@@ -778,12 +783,11 @@ export default UserDashboard;`,
                 animation="slide"
               />
 
-              <div className="mt-8">
+              <div className="mt-12 bg-gray-900/40 p-8 rounded-xl border border-gray-800/40 backdrop-blur-sm">
                 <Suspense fallback={<ServiceSectionSkeleton />}>
                   <ServiceProcessSteps
                     serviceId={service.id}
                     primaryColor={primaryColor}
-                    secondaryColor={secondaryColor}
                   />
                 </Suspense>
               </div>
@@ -794,24 +798,36 @@ export default UserDashboard;`,
                 service.id === "servers" ||
                 service.id === "webapps") && (
                 <div className="mt-12">
-                  <h3 className="text-xl font-bold mb-4">
-                    <HighlightText color={`bg-${primaryColor}-500/10`}>
-                      Przykład implementacji
-                    </HighlightText>
-                  </h3>
+                  <Card3D
+                    interactive={false}
+                    shadow
+                    bgColor="bg-gray-900/30"
+                    borderColor={`border-${primaryColor}-500/10`}
+                    className="p-6"
+                  >
+                    <h3 className="text-xl font-semibold mb-6">
+                      <HighlightText
+                        color={`bg-${primaryColor}-500/10`}
+                        height="30%"
+                        position="bottom"
+                      >
+                        Przykład implementacji
+                      </HighlightText>
+                    </h3>
 
-                  <CodeBlock
-                    code={getExampleCode().code}
-                    language={getExampleCode().language}
-                    fileName={getExampleCode().fileName}
-                    showLineNumbers
-                    theme="tech"
-                    highlightLines={getExampleCode().highlightLines}
-                    wrapLines
-                    copyButton
-                    rounded="rounded-lg"
-                    maxHeight="400px"
-                  />
+                    <CodeBlock
+                      code={getExampleCode().code}
+                      language={getExampleCode().language}
+                      fileName={getExampleCode().fileName}
+                      showLineNumbers
+                      theme="tech"
+                      highlightLines={getExampleCode().highlightLines}
+                      wrapLines
+                      copyButton
+                      rounded="rounded-lg"
+                      maxHeight="400px"
+                    />
+                  </Card3D>
                 </div>
               )}
             </AnimatedSection>
@@ -839,14 +855,24 @@ export default UserDashboard;`,
                 animation="slide"
               />
 
-              <div className="mt-10">
-                <Suspense fallback={<ServiceSectionSkeleton />}>
-                  <ServiceBenefitsChart
-                    serviceId={service.id}
-                    primaryColor={primaryColor}
-                    secondaryColor={secondaryColor}
-                  />
-                </Suspense>
+              <div className="mt-12">
+                <Card3D
+                  interactive={false}
+                  shadow
+                  bgColor="bg-gray-900/40"
+                  borderColor={`border-${primaryColor}-500/20`}
+                  className="p-8 rounded-xl overflow-hidden"
+                >
+                  <Suspense fallback={<ServiceSectionSkeleton />}>
+                    <ErrorBoundary>
+                      <ServiceBenefitsChart
+                        serviceId={service.id}
+                        primaryColor={primaryColor}
+                        secondaryColor={secondaryColor}
+                      />
+                    </ErrorBoundary>
+                  </Suspense>
+                </Card3D>
               </div>
             </AnimatedSection>
           </section>
@@ -863,8 +889,8 @@ export default UserDashboard;`,
           <section className="mb-20">
             <AnimatedSection animation="fadeIn">
               <SectionHeading
-                title="Wykorzystywane technologie"
-                subtitle="Narzędzia i platformy używane w realizacji"
+                title="Technologie"
+                subtitle="Narzędzia i platformy wykorzystywane w usłudze"
                 alignment="left"
                 size="lg"
                 gradient
@@ -873,13 +899,39 @@ export default UserDashboard;`,
                 animation="slide"
               />
 
-              <div className="mt-10">
-                <Suspense fallback={<ServiceSectionSkeleton />}>
-                  <ServiceTechStack
-                    technologies={service.tags}
-                    primaryColor={primaryColor}
-                  />
-                </Suspense>
+              <div className="mt-12">
+                <Card3D
+                  interactive={false}
+                  glowEffect
+                  glowColor={`rgba(${
+                    primaryColor === "indigo"
+                      ? "99, 102, 241"
+                      : primaryColor === "emerald"
+                      ? "16, 185, 129"
+                      : primaryColor === "blue"
+                      ? "59, 130, 246"
+                      : primaryColor === "purple"
+                      ? "139, 92, 246"
+                      : primaryColor === "sky"
+                      ? "14, 165, 233"
+                      : primaryColor === "amber"
+                      ? "245, 158, 11"
+                      : primaryColor === "pink"
+                      ? "236, 72, 153"
+                      : "99, 102, 241"
+                  }, 0.3)`}
+                  shadow
+                  bgColor="bg-gray-900/40"
+                  borderColor={`border-${primaryColor}-500/10`}
+                  className="p-8 rounded-xl"
+                >
+                  <Suspense fallback={<ServiceSectionSkeleton />}>
+                    <ServiceTechStack
+                      technologies={service.tags}
+                      primaryColor={primaryColor}
+                    />
+                  </Suspense>
+                </Card3D>
               </div>
             </AnimatedSection>
           </section>
@@ -893,7 +945,7 @@ export default UserDashboard;`,
 
         {/* Comparison Section */}
         <NavHighlightObserver sectionId="comparison">
-          <section className="mb-20">
+          <section className="mb-24">
             <AnimatedSection animation="fadeIn">
               <SectionHeading
                 title="Porównanie rozwiązań"
@@ -906,40 +958,52 @@ export default UserDashboard;`,
                 animation="slide"
               />
 
-              <div className="mt-10">
-                <Suspense fallback={<ServiceSectionSkeleton />}>
-                  <ServiceComparisonTable
-                    serviceId={service.id}
-                    primaryColor={primaryColor}
-                  />
-                </Suspense>
+              <div className="mt-12">
+                <Card3D
+                  interactive={false}
+                  shadow
+                  bgColor="bg-gray-900/40"
+                  borderColor={`border-${primaryColor}-500/10`}
+                  className="p-6 sm:p-8 rounded-xl"
+                >
+                  <Suspense fallback={<ServiceSectionSkeleton />}>
+                    <ServiceComparisonTable
+                      serviceId={service.id}
+                      primaryColor={primaryColor}
+                    />
+                  </Suspense>
+                </Card3D>
               </div>
             </AnimatedSection>
           </section>
         </NavHighlightObserver>
 
         {/* CTA Section */}
-        <section className="mb-20">
-          <Suspense
-            fallback={
-              <div className="h-32 w-full bg-gray-800/20 animate-pulse rounded-lg" />
-            }
-          >
-            <ServiceCTA
-              serviceName={service.title}
-              primaryColor={primaryColor}
-              secondaryColor={secondaryColor}
-            />
-          </Suspense>
+        <section className="mb-24">
+          <div className="bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800 rounded-2xl p-1 shadow-xl">
+            <div className="bg-gradient-to-br from-gray-900/70 to-black/90 rounded-xl backdrop-blur-sm p-8 sm:p-12">
+              <Suspense
+                fallback={
+                  <div className="h-40 w-full bg-gray-800/20 animate-pulse rounded-lg" />
+                }
+              >
+                <ServiceCTA
+                  serviceName={service.title}
+                  primaryColor={primaryColor}
+                  secondaryColor={secondaryColor}
+                />
+              </Suspense>
+            </div>
+          </div>
         </section>
 
-        {/* Related Services */}
+        {/* Related Services with a more elegant presentation */}
         {relatedServices.length > 0 && (
-          <section className="mb-10">
-            <AnimatedSection animation="fadeIn" delay={0.2}>
+          <section className="mb-16">
+            <AnimatedSection animation="fadeIn">
               <SectionHeading
-                title="Powiązane usługi"
-                subtitle="Kompleksowe rozwiązania dla Twojego biznesu"
+                title="Podobne usługi"
+                subtitle="Inne rozwiązania, które mogą Cię zainteresować"
                 alignment="left"
                 size="lg"
                 gradient
@@ -948,12 +1012,13 @@ export default UserDashboard;`,
                 animation="slide"
               />
 
-              <div className="grid md:grid-cols-3 gap-6 mt-8">
+              <div className="grid md:grid-cols-3 gap-6 mt-12">
                 {relatedServices.map((relService) => (
                   <motion.div
                     key={relService.id}
-                    whileHover={{ y: -5 }}
-                    transition={{ duration: 0.3 }}
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.2 }}
                   >
                     <Link
                       href={`/uslugi/${relService.id}`}
@@ -967,7 +1032,7 @@ export default UserDashboard;`,
                         borderGlow={false}
                         backgroundEffect="gradient"
                       >
-                        <div className="p-5 h-full">
+                        <div className="p-6 h-full">
                           <div className="flex items-center mb-4">
                             <div
                               className={`w-10 h-10 rounded-full bg-gradient-to-br ${relService.color} flex items-center justify-center mr-3`}
@@ -981,10 +1046,11 @@ export default UserDashboard;`,
                                 <ServiceIcon
                                   serviceId={relService.id}
                                   size={5}
+                                  color="indigo"
                                 />
                               </Suspense>
                             </div>
-                            <h3 className="text-lg font-bold">
+                            <h3 className="text-lg font-semibold">
                               {relService.title}
                             </h3>
                           </div>
@@ -1001,30 +1067,6 @@ export default UserDashboard;`,
           </section>
         )}
       </div>
-
-      {/* Add CSS for active nav indication */}
-      <style jsx global>{`
-        .nav-link.active-section {
-          color: white;
-          background-color: rgba(
-            ${primaryColor === "indigo"
-              ? "99, 102, 241"
-              : primaryColor === "emerald"
-              ? "16, 185, 129"
-              : primaryColor === "sky"
-              ? "14, 165, 233"
-              : primaryColor === "purple"
-              ? "168, 85, 247"
-              : primaryColor === "amber"
-              ? "245, 158, 11"
-              : primaryColor === "pink"
-              ? "236, 72, 153"
-              : "99, 102, 241"},
-            0.2
-          );
-          font-weight: 500;
-        }
-      `}</style>
     </div>
   );
 }
