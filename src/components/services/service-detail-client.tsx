@@ -11,12 +11,10 @@ import { Card3D } from "@/components/ambro-ui/card-3d";
 import { EnhancedButton } from "@/components/ambro-ui/enhanced-button";
 import { RevealText } from "@/components/ambro-ui/reveal-text";
 import { TiltCard } from "@/components/ambro-ui/tilt-card";
-import { ScrollProgress } from "@/components/ambro-ui/scroll-progress";
 import { SectionDivider } from "@/components/ambro-ui/section-divider";
 import { AnimatedGradientBorder } from "@/components/ambro-ui/animated-gradient-border";
 import { HighlightText } from "@/components/ambro-ui/highlight-text";
 import { CodeBlock } from "@/components/ambro-ui/code-block";
-import { FloatingBubbles } from "@/components/ambro-ui/floating-bubbles";
 import dynamic from "next/dynamic";
 import { Suspense } from "react";
 import type { SerializableService } from "@/lib/service-utils";
@@ -450,8 +448,6 @@ export default UserDashboard;`,
 
   return (
     <div className="min-h-screen bg-gray-950">
-      <ScrollProgress color={`bg-${primaryColor}-500`} />
-
       <div className="max-w-6xl mx-auto pt-24 pb-16 px-4 sm:px-6 relative z-10">
         {/* Hero Header with Refined Design */}
         <motion.div
@@ -487,35 +483,6 @@ export default UserDashboard;`,
                     : "6366f1"
                 }' fill-opacity='0.2'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
               }}
-            />
-          </div>
-
-          {/* Floating particles for visual interest */}
-          <div className="absolute inset-0 z-0 opacity-40">
-            <FloatingBubbles
-              count={8}
-              minSize={2}
-              maxSize={6}
-              color={`rgba(${
-                primaryColor === "indigo"
-                  ? "99, 102, 241"
-                  : primaryColor === "emerald"
-                  ? "16, 185, 129"
-                  : primaryColor === "blue"
-                  ? "59, 130, 246"
-                  : primaryColor === "purple"
-                  ? "139, 92, 246"
-                  : primaryColor === "amber"
-                  ? "245, 158, 11"
-                  : primaryColor === "sky"
-                  ? "14, 165, 233"
-                  : primaryColor === "pink"
-                  ? "236, 72, 153"
-                  : "99, 102, 241"
-              }, 0.6)`}
-              minSpeed={0.5}
-              maxSpeed={1.5}
-              interactive={false}
             />
           </div>
 

@@ -5,7 +5,6 @@ import { useState } from "react";
 import { useParams, notFound } from "next/navigation";
 import Link from "next/link";
 import { FloatingBubbles } from "@/components/ambro-ui/floating-bubbles";
-import { ScrollProgress } from "@/components/ambro-ui/scroll-progress";
 import { SectionHeading } from "@/components/ambro-ui/section-heading";
 import { SmoothScroll } from "@/components/ambro-ui/smooth-scroll";
 import { Card3D } from "@/components/ambro-ui/card-3d";
@@ -470,12 +469,6 @@ export default function ProjectDetailsPage() {
         maxSize={100}
         minSize={20}
         interactive
-      />
-
-      {/* Scroll Progress Indicator */}
-      <ScrollProgress
-        position="top"
-        color="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"
       />
 
       <SmoothScroll>

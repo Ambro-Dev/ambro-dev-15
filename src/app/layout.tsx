@@ -137,7 +137,11 @@ export default function RootLayout({
                 </Suspense>
 
                 {/* Main content with ID for skip-to-content */}
-                <main id="main-content" tabIndex={-1}>
+                <main
+                  id="main-content"
+                  tabIndex={-1}
+                  className="pt-16 md:pt-20"
+                >
                   {children}
                 </main>
               </div>

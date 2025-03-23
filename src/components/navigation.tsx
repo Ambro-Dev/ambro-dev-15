@@ -22,6 +22,7 @@ const navLinks = [
   { href: "/projekty", label: "Projekty" },
   { href: "/cennik", label: "Cennik" },
   { href: "/kontakt", label: "Kontakt" },
+  { href: "/blog", label: "Blog" },
 ];
 
 // Animacje zdefiniowane poza komponentem
@@ -248,29 +249,25 @@ const Navigation = () => {
 
       {/* Main navigation header */}
       <header
-        className={`fixed top-0 left-0 right-0 z-40 transition-all duration-500 ${
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           isScrolled
-            ? "bg-black/85 backdrop-blur-xl py-3 shadow-lg shadow-indigo-500/10"
-            : "bg-transparent py-6"
+            ? "bg-black/80 backdrop-blur-xl shadow-lg"
+            : "bg-transparent"
         }`}
       >
-        <div className="max-w-6xl mx-auto px-6 flex items-center justify-between">
-          {/* Logo with animation */}
-          <MotionDiv
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
-          >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16 md:h-20">
+            {/* Logo */}
             <Link
               href="/"
-              className="relative z-20 group"
+              className="relative group"
               aria-label="Strona główna"
             >
               <GradientText
                 from="indigo-500"
                 via="purple-500"
                 to="pink-500"
-                fontSize="text-2xl md:text-3xl"
+                fontSize="text-xl md:text-2xl"
                 fontWeight="bold"
                 animated={true}
                 duration={6}
@@ -278,85 +275,64 @@ const Navigation = () => {
               >
                 Ambro-Dev
               </GradientText>
-              <MotionSpan
-                className="absolute -bottom-1 left-0 h-0.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 w-0 group-hover:w-full"
-                transition={{ duration: 0.3 }}
-              />
             </Link>
-          </MotionDiv>
 
-          {/* Desktop navigation */}
-          <nav
-            className="hidden md:flex items-center space-x-8"
-            aria-label="Nawigacja główna"
-          >
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="relative group"
-                aria-current={isLinkActive(link.href) ? "page" : undefined}
-              >
-                <span
-                  className={`text-sm font-medium transition-colors duration-300 group-hover:text-white ${
+            {/* Desktop Navigation */}
+            <nav
+              className="hidden md:flex items-center space-x-8"
+              aria-label="Nawigacja główna"
+            >
+              {navLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`text-sm font-medium transition-colors hover:text-white relative group ${
                     isLinkActive(link.href)
                       ? "text-indigo-400"
-                      : "text-gray-200"
+                      : "text-gray-300"
                   }`}
+                  aria-current={isLinkActive(link.href) ? "page" : undefined}
                 >
                   {link.label}
-                </span>
-                {isLinkActive(link.href) ? (
-                  <MotionSpan
-                    className="absolute -bottom-1 left-0 h-0.5 w-full bg-indigo-400"
-                    layoutId="underline"
+                  <span
+                    className={`absolute -bottom-1 left-0 h-0.5 bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-300 ${
+                      isLinkActive(link.href)
+                        ? "w-full"
+                        : "w-0 group-hover:w-full"
+                    }`}
                   />
-                ) : (
-                  <MotionSpan
-                    className="absolute -bottom-1 left-0 h-0.5 bg-indigo-400 w-0 group-hover:w-full"
-                    transition={{ duration: 0.2 }}
-                  />
-                )}
-              </Link>
-            ))}
+                </Link>
+              ))}
+            </nav>
 
-            <MotionDiv
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.98 }}
-              transition={{ type: "spring", stiffness: 400, damping: 17 }}
-            >
+            {/* Desktop CTA Button */}
+            <div className="hidden md:block">
               <EnhancedButton
                 variant="tech"
                 size="sm"
                 magneticEffect
                 glowOnHover
                 href="/kontakt"
-                className="ml-4 font-medium"
+                className="font-medium"
               >
                 Rozpocznij projekt
               </EnhancedButton>
-            </MotionDiv>
-          </nav>
+            </div>
 
-          {/* Mobile menu button */}
-          {!mobileMenuOpen && (
-            <MotionButton
+            {/* Mobile menu button */}
+            <button
               onClick={toggleMobileMenu}
-              className="relative z-20 md:hidden p-2 -mr-2"
+              className="md:hidden p-2 -mr-2"
               type="button"
               aria-label="Otwórz menu"
-              aria-expanded={mobileMenuOpen}
-              aria-controls="mobile-menu"
-              whileTap={{ scale: 0.9 }}
-              transition={{ duration: 0.2 }}
             >
               <div className="w-6 h-5 flex flex-col justify-between items-center">
-                <MotionSpan className="block h-0.5 w-full bg-white origin-center" />
-                <MotionSpan className="block h-0.5 w-full bg-white" />
-                <MotionSpan className="block h-0.5 w-full bg-white origin-center" />
+                <span className="block h-0.5 w-full bg-white" />
+                <span className="block h-0.5 w-full bg-white" />
+                <span className="block h-0.5 w-full bg-white" />
               </div>
-            </MotionButton>
-          )}
+            </button>
+          </div>
         </div>
       </header>
     </>
