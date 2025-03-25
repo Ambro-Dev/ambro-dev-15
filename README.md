@@ -278,3 +278,87 @@ To implement the actual landing page:
 4. Customize styling and content according to design requirements
 
 The structure can be extended with additional sections as needed while maintaining the performance benefits of Partial Prerendering.
+
+## Zarządzanie projektami za pomocą MDX
+
+Aplikacja używa plików MDX do zarządzania danymi projektów. To pozwala na łatwe dodawanie, edycję i usuwanie projektów bez konieczności modyfikacji kodu aplikacji.
+
+### Struktura plików projektów
+
+Pliki MDX z projektami znajdują się w katalogu `src/content/projects/`. Każdy projekt powinien mieć własny plik MDX (np. `projekt-nazwa.mdx`).
+
+### Format pliku MDX projektu
+
+Każdy plik MDX musi zawierać metadane w formacie YAML na początku (frontmatter) oraz opcjonalny fragment kodu poniżej.
+
+Przykład:
+
+```mdx
+---
+id: "nazwa-projektu"
+title: "Tytuł projektu"
+shortDesc: "Krótki opis projektu"
+description: "Pełny opis projektu"
+challenge: "Opis wyzwania"
+solution: "Opis rozwiązania"
+client: "Nazwa klienta"
+timeline: "Czas trwania projektu"
+role: "Rola w projekcie"
+technologies:
+  - "Technologia 1"
+  - "Technologia 2"
+features:
+  - "Funkcjonalność 1"
+  - "Funkcjonalność 2"
+outcomes:
+  - "Rezultat 1"
+  - "Rezultat 2"
+image: "/ścieżka/do/głównego/obrazu.jpg"
+images:
+  - "/ścieżka/do/obrazu1.jpg"
+  - "/ścieżka/do/obrazu2.jpg"
+color: "from-blue-500 to-indigo-600"
+---
+
+```jsx
+// Tutaj możesz umieścić przykładowy kod związany z projektem
+// Wszystko co znajduje się między ``` będzie interpretowane jako kod
+// i automatycznie wyświetlone na stronie projektu
+
+function MojKomponent() {
+  return <div>Przykładowy kod</div>;
+}
+```
+
+### Dodawanie nowego projektu
+
+1. Utwórz nowy plik MDX w katalogu `src/content/projects/`
+2. Dodaj wszystkie wymagane metadane w sekcji frontmatter
+3. Opcjonalnie dodaj fragment kodu pod sekcją frontmatter
+4. Zapisz plik z rozszerzeniem .mdx
+
+Projekt automatycznie pojawi się na liście projektów i będzie dostępny pod adresem `/projekty/{id}`.
+
+### Edycja projektu
+
+Aby zmodyfikować istniejący projekt, wystarczy edytować odpowiedni plik MDX w katalogu `src/content/projects/`.
+
+### Pola metadanych projektu
+
+| Pole | Typ | Opis |
+| ---- | --- | ---- |
+| id | string | Unikalny identyfikator projektu (używany w URL) |
+| title | string | Tytuł projektu |
+| shortDesc | string | Krótki opis projektu |
+| description | string | Pełny opis projektu |
+| challenge | string | Opis wyzwania w projekcie |
+| solution | string | Opis rozwiązania wdrożonego w projekcie |
+| client | string | Nazwa klienta |
+| timeline | string | Czas trwania projektu |
+| role | string | Twoja rola w projekcie |
+| technologies | string[] | Lista technologii użytych w projekcie |
+| features | string[] | Lista funkcjonalności projektu |
+| outcomes | string[] | Lista rezultatów projektu |
+| image | string | Ścieżka do głównego obrazu projektu |
+| images | string[] | Lista ścieżek do galerii obrazów projektu |
+| color | string | Gradient tła (format Tailwind CSS) |

@@ -717,7 +717,7 @@ const ServiceTechStack: React.FC<{
   };
 
   return (
-    <div ref={sectionRef}>
+    <div ref={sectionRef} className="p-6">
       {/* Filtry kategorii */}
       <div className="mb-6 flex flex-wrap gap-2">
         <button

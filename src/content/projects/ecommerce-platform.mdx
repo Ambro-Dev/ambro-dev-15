@@ -1,0 +1,92 @@
+---
+id: "ecommerce-platform"
+title: "Platforma e-commerce"
+shortDesc: "W pełni funkcjonalne rozwiązanie e-commerce z zarządzaniem magazynem i płatnościami."
+description: "Kompleksowa platforma e-commerce stworzona dla średniej wielkości sklepu internetowego, oferująca pełen zakres funkcji potrzebnych do prowadzenia nowoczesnego biznesu online. System integruje zaawansowane zarządzanie magazynem, przetwarzanie płatności online oraz analizę danych klientów, umożliwiając właścicielom sklepu podejmowanie decyzji opartych na danych."
+challenge: "Wyzwaniem było stworzenie platformy, która będzie zarówno przyjazna dla użytkownika, jak i bardzo wydajna, zdolna do obsługi dużej liczby jednoczesnych zamówień, szczególnie w okresach zwiększonego ruchu (np. promocje, święta)."
+solution: "Zaimplementowałem architekturę mikroserwisową z wykorzystaniem Node.js i React, z niezależnymi modułami do obsługi katalogu produktów, koszyka, płatności i zarządzania zamówieniami. System wykorzystuje Redis do buforowania i MongoDB jako główną bazę danych, z zaimplementowanym systemem kolejkowania dla operacji intensywnie obciążających serwer."
+client: "BestShop.pl"
+timeline: "10 miesięcy"
+role: "Full Stack Developer"
+technologies:
+  - "React"
+  - "Node.js"
+  - "MongoDB"
+  - "Redis"
+  - "Stripe API"
+  - "Redux"
+  - "AWS"
+  - "Docker"
+features:
+  - "Responsywny katalog produktów"
+  - "Zaawansowany koszyk zakupowy"
+  - "Integracja z bramkami płatności"
+  - "System zarządzania magazynem"
+  - "Panel administracyjny"
+  - "Analityka sprzedaży"
+  - "Personalizowane rekomendacje produktów"
+outcomes:
+  - "Wzrost konwersji o 28% w porównaniu do poprzedniej platformy"
+  - "Zwiększenie średniej wartości koszyka o 15%"
+  - "Skrócenie czasu realizacji zamówień o 35%"
+  - "Lepsze zarządzanie magazynem i zmniejszenie liczby niedostępnych produktów o 60%"
+image: "/api/placeholder/800/500"
+images:
+  - "/api/placeholder/800/500"
+  - "/api/placeholder/800/500"
+  - "/api/placeholder/800/500"
+color: "from-purple-500 to-indigo-600"
+---
+
+```jsx
+// Przykładowy kod obsługi koszyka zakupowego
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+
+interface CartItem {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+  image: string;
+}
+
+interface CartState {
+  items: CartItem[];
+  totalItems: number;
+  totalAmount: number;
+  loading: boolean;
+  error: string | null;
+}
+
+const initialState: CartState = {
+  items: [],
+  totalItems: 0,
+  totalAmount: 0,
+  loading: false,
+  error: null
+};
+
+const cartSlice = createSlice({
+  name: 'cart',
+  initialState,
+  reducers: {
+    addToCart(state, action: PayloadAction<CartItem>) {
+      const existingItem = state.items.find(item => item.id === action.payload.id);
+      
+      if (existingItem) {
+        existingItem.quantity += action.payload.quantity;
+      } else {
+        state.items.push(action.payload);
+      }
+      
+      state.totalItems = state.items.reduce((total, item) => total + item.quantity, 0);
+      state.totalAmount = state.items.reduce((total, item) => 
+        total + (item.price * item.quantity), 0);
+    },
+    // inne akcje: removeFromCart, updateQuantity, clearCart...
+  }
+});
+
+export const { addToCart } = cartSlice.actions;
+export default cartSlice.reducer;
+``` 

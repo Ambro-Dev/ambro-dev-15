@@ -487,7 +487,7 @@ const ServiceBenefitsChart: React.FC<{
 
   return (
     <motion.div
-      className="space-y-4"
+      className="space-y-4 p-6"
       variants={containerVariants}
       initial="hidden"
       animate="visible"
