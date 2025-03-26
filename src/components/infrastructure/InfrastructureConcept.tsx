@@ -102,12 +102,6 @@ const InfrastructureConcept: React.FC = () => {
   // Handle view mode change
   const handleViewChange = (mode: ViewMode) => {
     setViewMode(mode);
-
-    // Reset scroll position
-    window.scrollTo({
-      top: containerRef.current?.offsetTop || 0,
-      behavior: "smooth",
-    });
   };
 
   // Handle scroll effects

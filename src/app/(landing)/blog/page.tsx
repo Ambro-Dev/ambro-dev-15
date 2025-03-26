@@ -8,56 +8,8 @@ import { EnhancedButton } from "@/components/ambro-ui/enhanced-button";
 import Link from "next/link";
 import { generateBreadcrumbSchema } from "@/lib/schema";
 import Script from "next/script";
+import { getAllBlogPosts } from "@/lib/blog";
 
-// Przykładowa struktura wpisu na blogu
-type BlogPost = {
-  slug: string;
-  title: string;
-  excerpt: string;
-  date: string;
-  author: string;
-  coverImage: string;
-  tags: string[];
-  readTime: number;
-};
-
-// Przykładowe dane wpisów (w rzeczywistej aplikacji, pobierane z CMS/API)
-const blogPosts: BlogPost[] = [
-  {
-    slug: "efektywna-automatyzacja-cicd-jenkins-github-actions",
-    title: "Efektywna automatyzacja CI/CD z Jenkins i GitHub Actions",
-    excerpt:
-      "Jak zbudować skuteczny pipeline CI/CD wykorzystując Jenkins i GitHub Actions? Poznaj najlepsze praktyki i gotowe rozwiązania.",
-    date: "2025-03-15",
-    author: "Ambro-Dev",
-    coverImage: "/images/blog/cicd-automation.webp",
-    tags: ["DevOps", "CI/CD", "Jenkins", "GitHub Actions", "Automatyzacja"],
-    readTime: 8,
-  },
-  {
-    slug: "terraform-jako-code-infrastruktura-chmurowa",
-    title: "Terraform jako Code: zarządzanie infrastrukturą chmurową",
-    excerpt:
-      "Jak efektywnie wykorzystać Terraform do zarządzania zasobami w AWS, Azure i GCP. Praktyczne podejście do Infrastructure as Code.",
-    date: "2025-03-01",
-    author: "Ambro-Dev",
-    coverImage: "/images/blog/terraform-iac.webp",
-    tags: ["Infrastructure as Code", "Terraform", "AWS", "Cloud", "DevOps"],
-    readTime: 12,
-  },
-  {
-    slug: "nextjs-15-server-components-wydajnosc-aplikacji",
-    title:
-      "Next.js 15: Jak Server Components rewolucjonizują wydajność aplikacji",
-    excerpt:
-      "Analiza wpływu Server Components w Next.js 15 na wydajność aplikacji webowych. Praktyczne przykłady i benchmarki.",
-    date: "2025-02-20",
-    author: "Ambro-Dev",
-    coverImage: "/images/blog/nextjs-15.webp",
-    tags: ["Next.js", "React", "Server Components", "Frontend", "Wydajność"],
-    readTime: 10,
-  },
-];
 // Metadata dla strony bloga
 export const metadata = constructMetadata({
   title: "Blog | DevOps i FullStack Development",
@@ -79,6 +31,9 @@ export const metadata = constructMetadata({
 
 // Komponent Blog Page
 export default function BlogPage() {
+  // Pobieranie postów z plików Obsidian
+  const blogPosts = getAllBlogPosts();
+
   return (
     <>
       {/* Dane strukturalne dla strony bloga */}
@@ -110,46 +65,58 @@ export default function BlogPage() {
 
           <Suspense fallback={<BlogPageSkeleton />}>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {blogPosts.map((post) => (
-                <Link key={post.slug} href={`/blog/${post.slug}`}>
-                  <article className="bg-gray-900/40 rounded-xl overflow-hidden h-full transform transition-all duration-300 hover:scale-[1.02] hover:shadow-lg border border-gray-800/50">
-                    <div className="h-48 bg-gray-800 relative">
-                      {/* Cover Image Placeholder (w rzeczywistości użyj next/image) */}
-                      <div className="absolute inset-0 bg-indigo-900/20 flex items-center justify-center">
-                        <span className="text-sm text-gray-400">
-                          {post.coverImage}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="p-6">
-                      <div className="flex items-center space-x-2 mb-3">
-                        <span className="text-xs text-gray-400">
-                          {post.date}
-                        </span>
-                        <span className="bg-indigo-900/30 text-indigo-300 text-xs rounded-full px-2 py-1">
-                          {post.readTime} min czytania
-                        </span>
-                      </div>
-                      <h2 className="text-xl font-bold mb-3 line-clamp-2">
-                        {post.title}
-                      </h2>
-                      <p className="text-gray-400 mb-4 line-clamp-3">
-                        {post.excerpt}
-                      </p>
-                      <div className="flex flex-wrap gap-2 mt-auto">
-                        {post.tags.slice(0, 3).map((tag) => (
-                          <span
-                            key={tag}
-                            className="text-xs bg-gray-800 text-gray-300 px-2 py-1 rounded-full"
-                          >
-                            {tag}
+              {blogPosts.length > 0 ? (
+                blogPosts.map((post) => (
+                  <Link key={post.slug} href={`/blog/${post.slug}`}>
+                    <article className="bg-gray-900/40 rounded-xl overflow-hidden h-full transform transition-all duration-300 hover:scale-[1.02] hover:shadow-lg border border-gray-800/50">
+                      <div className="h-48 bg-gray-800 relative">
+                        {/* Cover Image Placeholder (w rzeczywistości użyj next/image) */}
+                        <div className="absolute inset-0 bg-indigo-900/20 flex items-center justify-center">
+                          <span className="text-sm text-gray-400">
+                            {post.coverImage}
                           </span>
-                        ))}
+                        </div>
                       </div>
-                    </div>
-                  </article>
-                </Link>
-              ))}
+                      <div className="p-6">
+                        <div className="flex items-center space-x-2 mb-3">
+                          <span className="text-xs text-gray-400">
+                            {post.date}
+                          </span>
+                          <span className="bg-indigo-900/30 text-indigo-300 text-xs rounded-full px-2 py-1">
+                            {post.readTime} min czytania
+                          </span>
+                        </div>
+                        <h2 className="text-xl font-bold mb-3 line-clamp-2">
+                          {post.title}
+                        </h2>
+                        <p className="text-gray-400 mb-4 line-clamp-3">
+                          {post.excerpt}
+                        </p>
+                        <div className="flex flex-wrap gap-2 mt-auto">
+                          {post.tags.slice(0, 3).map((tag) => (
+                            <span
+                              key={tag}
+                              className="text-xs bg-gray-800 text-gray-300 px-2 py-1 rounded-full"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </article>
+                  </Link>
+                ))
+              ) : (
+                <div className="col-span-full text-center py-12">
+                  <p className="text-gray-400 text-lg mb-4">
+                    Nie znaleziono żadnych wpisów na blogu.
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Dodaj pliki markdown w katalogu &quot;obsidian/blog&quot;
+                    aby zobaczyć tutaj wpisy.
+                  </p>
+                </div>
+              )}
             </div>
           </Suspense>
 
